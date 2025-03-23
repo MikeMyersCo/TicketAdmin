@@ -4,8 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FordAmp Profit Dashboard</title>
-    <!-- Netlify Identity Widget -->
+    <!-- Netlify Identity Widget with direct loader -->
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <script>
+        // Global login function that can be called anywhere
+        window.openNetlifyLogin = function() {
+            console.log("openNetlifyLogin called");
+            // First try - direct access
+            if (window.netlifyIdentity) {
+                console.log("netlifyIdentity found, opening login");
+                window.netlifyIdentity.open('login');
+                return true;
+            }
+            
+            // Second try - dynamic reloading
+            console.log("netlifyIdentity not found, trying to load it");
+            const script = document.createElement('script');
+            script.src = 'https://identity.netlify.com/v1/netlify-identity-widget.js';
+            script.onload = function() {
+                console.log("netlifyIdentity script loaded dynamically");
+                if (window.netlifyIdentity) {
+                    window.netlifyIdentity.open('login');
+                } else {
+                    console.error("netlifyIdentity still not available after reload");
+                    alert("Authentication service could not be loaded. Please try reloading the page.");
+                }
+            };
+            document.head.appendChild(script);
+            return false;
+        };
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -485,12 +513,12 @@
                 <h1>Ford Amphitheater Analytics</h1>
                 <p class="header-tagline">Profit & Revenue Dashboard</p>
                 <div style="margin-top: 15px;">
-                    <button class="button" id="login-button" style="background-color:var(--secondary-color);" onclick="if(typeof netlifyIdentity !== 'undefined'){netlifyIdentity.open('login');}else{alert('Login service not available');}">
+                    <button class="button" id="login-button" style="background-color:var(--secondary-color);" onclick="window.openNetlifyLogin()">
                         <i class="fas fa-lock"></i> Login
                     </button>
                     <div id="user-info" style="display:none; color:white; margin-top:10px; font-size:0.9rem;">
                         Logged in as: <span id="user-email"></span>
-                        <button class="button" onclick="netlifyIdentity.logout();" style="margin-left:10px; padding:5px 10px; background-color:var(--dark-bg); font-size:0.8rem;">
+                        <button class="button" onclick="if(window.netlifyIdentity){window.netlifyIdentity.logout();}else{alert('Logout service not available');}" style="margin-left:10px; padding:5px 10px; background-color:var(--dark-bg); font-size:0.8rem;">
                             Logout
                         </button>
                     </div>
@@ -784,7 +812,7 @@
                     loginMessage.innerHTML = `
                         <h2 style="color: var(--primary-color); margin-bottom: 20px;">Login Required</h2>
                         <p style="font-size: 1.1rem; margin-bottom: 25px;">Please log in to access the FordAmp Profit Dashboard.</p>
-                        <button class="button" id="main-login-button" style="background-color: var(--secondary-color); font-size: 1.1rem; padding: 12px 30px;" onclick="if(typeof netlifyIdentity !== 'undefined'){netlifyIdentity.open('login');}else{alert('Login service not available');}">
+                        <button class="button" id="main-login-button" style="background-color: var(--secondary-color); font-size: 1.1rem; padding: 12px 30px;" onclick="window.openNetlifyLogin()">
                             <i class="fas fa-lock"></i> Login to Dashboard
                         </button>
                     `;
