@@ -2,6 +2,14 @@
 
 A powerful analytics dashboard for Ford Amphitheater ticket sales and profit analysis. This dashboard application connects to the same Google Sheets data source as the main ticket sales application but focuses on visualizing profit metrics and performance data.
 
+## Password Protection
+
+This site is password protected when deployed to Netlify. Authentication credentials are stored as a Netlify environment variable (`NETLIFY_AUTH_USERS`) rather than in the repository for security.
+
+Format for the environment variable value: `username:password`
+
+Example: `admin:warrior12345!`
+
 ## Features
 
 - Interactive charts and visualizations for:
@@ -64,7 +72,12 @@ A powerful analytics dashboard for Ford Amphitheater ticket sales and profit ana
    };
    ```
 
-2. Push your code to a GitHub repository:
+2. Set up password protection files:
+   - Create a `_redirects` file with: `/* /index.html 200! Role=subscriber`
+   - Create a `netlify.toml` file with auth configuration
+   - Create a placeholder `users.txt` file (credentials will be generated from an environment variable)
+
+3. Push your code to a GitHub repository:
    ```
    git init
    git add .
@@ -73,9 +86,9 @@ A powerful analytics dashboard for Ford Amphitheater ticket sales and profit ana
    git push -u origin main
    ```
 
-3. Sign up for a Netlify account at https://netlify.com
+4. Sign up for a Netlify account at https://netlify.com
 
-4. Connect your GitHub repository to Netlify:
+5. Connect your GitHub repository to Netlify:
    - Click "New site from Git"
    - Select GitHub and authorize Netlify
    - Choose your repository
@@ -83,12 +96,14 @@ A powerful analytics dashboard for Ford Amphitheater ticket sales and profit ana
    - Add environment variables:
      - Key: `GOOGLE_API_KEY`, Value: Your Google API key
      - Key: `SPREADSHEET_ID`, Value: Your Google Spreadsheet ID
+     - Key: `NETLIFY_AUTH_USERS`, Value: `admin:warrior12345!` (or your preferred credentials)
 
-5. Deploy your site:
+6. Deploy your site:
    - Click "Deploy site"
    - Netlify will build and deploy your application
+   - The site will be password protected using the credentials in users.txt
 
-6. Configure domain settings (optional):
+7. Configure domain settings (optional):
    - Go to "Domain settings" in your Netlify dashboard
    - Add a custom domain or use the provided Netlify subdomain
 

@@ -1,0 +1,9 @@
+[build]
+  publish = "."
+  command = "echo $NETLIFY_AUTH_USERS > users.txt"
+
+[context.production]
+  environment = { NODE_VERSION = "16" }
+
+[auth]
+  usersFilePath = "./users.txt"

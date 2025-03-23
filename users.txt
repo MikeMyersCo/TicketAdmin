@@ -1,0 +1,2 @@
+# This file will be replaced during deployment
+# Do not store actual credentials here
