@@ -1,14 +1,18 @@
-# Basic Netlify configuration
+# Netlify configuration with password protection
 [build]
   # Publish directory (where the final, built files will be placed)
   publish = "."
   
-  # Optional build command - not needed for static HTML/JS
-  # command = "npm run build"
+  # Generate users.txt file from environment variable
+  command = "echo $NETLIFY_AUTH_USERS > users.txt"
 
 # Production environment variables
 [context.production]
   environment = { NODE_VERSION = "16" }
+
+# Auth settings for password protection
+[auth]
+  usersFilePath = "./users.txt"
 
 # For SPA routing - serves index.html for any route
 [[redirects]]
