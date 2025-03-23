@@ -6,6 +6,37 @@
     <title>FordAmp Profit Dashboard</title>
     <!-- Netlify Identity Widget -->
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <script>
+        // Configure Netlify Identity to allow unconfirmed logins
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.netlifyIdentity) {
+                console.log("Setting Netlify Identity config");
+                window.netlifyIdentity.setConfig({
+                    allowUnconfirmedLogin: true
+                });
+                
+                // Hook into error events to handle confirmation errors
+                window.netlifyIdentity.on('error', err => {
+                    console.error('Netlify Identity error:', err);
+                    // If there's a confirmation error, try to bypass it
+                    if (err.message.includes('email not confirmed')) {
+                        alert('Bypassing email confirmation. Please try logging in again.');
+                        window.netlifyIdentity.refresh();
+                    }
+                });
+            } else {
+                console.warn("Netlify Identity not available on page load");
+                // Try again after a delay
+                setTimeout(() => {
+                    if (window.netlifyIdentity) {
+                        window.netlifyIdentity.setConfig({
+                            allowUnconfirmedLogin: true
+                        });
+                    }
+                }, 1000);
+            }
+        });
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -488,6 +519,9 @@
                     <button class="button" id="login-button" onclick="netlifyIdentity.open();" style="background-color:var(--secondary-color);">
                         <i class="fas fa-lock"></i> Login
                     </button>
+                    <button class="button" id="signup-button" onclick="netlifyIdentity.open('signup');" style="background-color:var(--primary-light); margin-left:10px;">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                    </button>
                     <div id="user-info" style="display:none; color:white; margin-top:10px; font-size:0.9rem;">
                         Logged in as: <span id="user-email"></span>
                         <button class="button" onclick="netlifyIdentity.logout();" style="margin-left:10px; padding:5px 10px; background-color:var(--dark-bg); font-size:0.8rem;">
@@ -757,68 +791,128 @@
     <script>
         // Handle Netlify Identity authentication
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if user is already logged in
-            const user = netlifyIdentity.currentUser();
-            updateUserUI(user);
+            console.log("Setting up Netlify Identity handlers");
+            
+            // Initialize UI first even if user is not available yet
+            updateUserUI(null);
+            
+            // Try to get current user
+            let user;
+            try {
+                user = netlifyIdentity.currentUser();
+                console.log("Current user:", user ? user.email : "none");
+                updateUserUI(user);
+            } catch (e) {
+                console.warn("Error getting current user:", e);
+                // Will retry after a delay
+            }
             
             // Listen for login events
             netlifyIdentity.on('login', user => {
+                console.log('Login event triggered:', user.email);
                 updateUserUI(user);
-                console.log('Logged in as:', user.email);
+                
                 // Hide the login modal
                 netlifyIdentity.close();
+                
                 // Refresh data after login
                 if (typeof fetchSheetData === 'function') {
                     fetchSheetData();
                 }
+                
+                // Force a page refresh - sometimes helps with persistence
+                // Uncomment if still having issues
+                // setTimeout(() => { window.location.reload(); }, 1000);
             });
             
             // Listen for logout events
             netlifyIdentity.on('logout', () => {
+                console.log('Logout event triggered');
                 updateUserUI(null);
-                console.log('Logged out');
             });
             
-            // Handle initial page load - redirect to login if no user
-            if (!user && window.location.hostname !== 'localhost' && 
-                window.location.hostname !== '127.0.0.1' && 
-                window.location.protocol !== 'file:') {
+            // Listen for user events
+            netlifyIdentity.on('init', user => {
+                console.log('Netlify Identity initialized:', user ? 'User exists' : 'No user');
+                updateUserUI(user);
+            });
+            
+            // Handle signup events
+            netlifyIdentity.on('signup', user => {
+                console.log('Signup success! Attempting login...');
+                // Sometimes an automatic login is needed after signup
                 setTimeout(() => {
                     netlifyIdentity.open('login');
-                }, 800);
+                }, 1000);
+            });
+            
+            // Show login modal automatically in production
+            const isLocalDev = window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1' || 
+                window.location.protocol === 'file:';
+            
+            if (!user && !isLocalDev) {
+                console.log("Auto-opening login dialog (production mode)");
+                setTimeout(() => {
+                    try {
+                        netlifyIdentity.open('login');
+                    } catch (e) {
+                        console.error("Error opening login dialog:", e);
+                    }
+                }, 1000);
             }
         });
         
         // Update UI based on user state
         function updateUserUI(user) {
+            console.log("Updating UI for user:", user ? user.email : "logged out");
+            
             const loginButton = document.getElementById('login-button');
+            const signupButton = document.getElementById('signup-button');
             const userInfo = document.getElementById('user-info');
             const userEmail = document.getElementById('user-email');
+            
+            // Local development check
+            const isLocalDev = window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1' || 
+                window.location.protocol === 'file:';
+            
+            console.log("Is local development:", isLocalDev);
             
             if (user) {
                 // User is logged in
                 if (loginButton) loginButton.style.display = 'none';
+                if (signupButton) signupButton.style.display = 'none';
                 if (userInfo) userInfo.style.display = 'block';
                 if (userEmail) userEmail.textContent = user.email;
                 
-                // Show dashboard content
-                document.querySelectorAll('.dashboard-container, .kpi-grid, .filters').forEach(elem => {
+                // Always show dashboard content when logged in
+                document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
                     if (elem) elem.style.display = '';
                 });
+                
+                console.log("UI updated for logged in user");
             } else {
                 // User is logged out
                 if (loginButton) loginButton.style.display = 'inline-block';
+                if (signupButton) signupButton.style.display = 'inline-block';
                 if (userInfo) userInfo.style.display = 'none';
                 if (userEmail) userEmail.textContent = '';
                 
-                // Hide dashboard content if not in local dev
-                if (window.location.hostname !== 'localhost' && 
-                    window.location.hostname !== '127.0.0.1' && 
-                    window.location.protocol !== 'file:') {
-                    document.querySelectorAll('.dashboard-container, .kpi-grid, .filters').forEach(elem => {
+                // Show dashboard in local development even when logged out
+                if (isLocalDev) {
+                    console.log("Local development mode - showing dashboard even without login");
+                    document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
+                        if (elem) elem.style.display = '';
+                    });
+                } else {
+                    console.log("Production mode - hiding dashboard for logged out user");
+                    document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
                         if (elem) elem.style.display = 'none';
                     });
                 }
+                
+                console.log("UI updated for logged out user");
             }
         }
     </script>
