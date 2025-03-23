@@ -671,11 +671,12 @@ function updateRecentStubHubSales(data) {
             console.log("Exact 'Stubhub' count:", stubhubExact);
             console.log("Contains 'hub' count:", anyHub);
             
-            // Filter for StubHub tickets - simplified approach
+            // Filter for StubHub tickets - with correct capitalization
             const stubHubSales = data.filter(ticket => 
-                // Use the isStubHub flag or direct detection
+                // Use the isStubHub flag or direct detection for either capitalization
                 ticket.isStubHub || 
-                (ticket.saleType === 'Stubhub') ||
+                ticket.saleType === 'StubHub' ||  // Capital H as in spreadsheet
+                ticket.saleType === 'Stubhub' ||  // Lowercase h as fallback
                 // Fallback to pattern matching if needed
                 (ticket.saleType && ticket.saleType.toLowerCase() === 'stubhub')
             );
@@ -734,7 +735,8 @@ function updateRecentStubHubSales(data) {
             // StubHub sales in the entire dataset (might be filtered out)
             const allStubHubSales = ticketData.filter(ticket => 
                 ticket.saleType && (
-                    ticket.saleType === 'Stubhub' || // Exact match with capital S
+                    ticket.saleType === 'StubHub' || // Exact match with capital H as in spreadsheet
+                    ticket.saleType === 'Stubhub' || // Alternative capitalization
                     ticket.saleType.toLowerCase() === 'stubhub' || // Case insensitive match
                     ticket.saleType.toLowerCase() === 'stub hub' || // With space
                     ticket.saleType.toLowerCase().includes('hub') ||
@@ -902,7 +904,7 @@ function updateStubHubSalesByDay(data) {
             // Use simplified approach with fallbacks
             const stubHubSales = data.filter(ticket => {
                 // Use flag or direct detection
-                const isStubHub = ticket.isStubHub || ticket.saleType === 'Stubhub';
+                const isStubHub = ticket.isStubHub || ticket.saleType === 'StubHub' || ticket.saleType === 'Stubhub';
                 
                 // Need date for day-of-week analysis
                 const hasSoldDate = ticket.soldDate != null;
@@ -946,10 +948,11 @@ function updateStubHubSalesByDay(data) {
                 return;
             }
             
-            // Check entire dataset for StubHub sales with exact match for 'Stubhub'
+            // Check entire dataset for StubHub sales with correct capitalization
             const allStubHubSales = ticketData.filter(ticket => 
                 ticket.saleType && (
-                    ticket.saleType === 'Stubhub' || // Exact match with capital S
+                    ticket.saleType === 'StubHub' || // Exact match with capital H as in spreadsheet
+                    ticket.saleType === 'Stubhub' || // Alternative capitalization
                     ticket.saleType.toLowerCase() === 'stubhub' || // Case insensitive match
                     ticket.saleType.toLowerCase() === 'stub hub' || // With space
                     ticket.saleType.toLowerCase().includes('hub') ||
@@ -1216,15 +1219,22 @@ function calculateStubHubMetrics(data) {
     try {
         // Log debugging info
         console.log("Calculating StubHub metrics from", data.length, "tickets");
+        
+        // Count different capitalization variants
         const stubhubFlagged = data.filter(ticket => ticket.isStubHub).length;
-        const exactStubhub = data.filter(ticket => ticket.saleType === 'Stubhub').length;
-        console.log(`Flagged as StubHub: ${stubhubFlagged}, Exact 'Stubhub': ${exactStubhub}`);
+        const exactStubhubCapH = data.filter(ticket => ticket.saleType === 'StubHub').length;
+        const exactStubhubLowerH = data.filter(ticket => ticket.saleType === 'Stubhub').length;
+        
+        console.log(`Flagged as StubHub: ${stubhubFlagged}`);
+        console.log(`Exact 'StubHub' (capital H): ${exactStubhubCapH}`);
+        console.log(`Exact 'Stubhub' (lowercase h): ${exactStubhubLowerH}`);
         
         // Find StubHub tickets using the isStubHub flag and fallbacks
         const stubHubTickets = data.filter(ticket => 
             // Use the flag if available
             ticket.isStubHub || 
-            // Exact match as fallback
+            // Exact match for both capitalizations as fallback
+            ticket.saleType === 'StubHub' || 
             ticket.saleType === 'Stubhub' || 
             // Case insensitive as last resort
             (ticket.saleType && ticket.saleType.toLowerCase() === 'stubhub')
@@ -1235,8 +1245,8 @@ function calculateStubHubMetrics(data) {
             // If it has the StubHub flag, it's not direct
             if (ticket.isStubHub) return false;
             
-            // If it's explicitly labeled as Stubhub, it's not direct
-            if (ticket.saleType === 'Stubhub') return false;
+            // If it's explicitly labeled as StubHub with either capitalization, it's not direct
+            if (ticket.saleType === 'StubHub' || ticket.saleType === 'Stubhub') return false;
             
             // If it doesn't even have a sale type, skip it
             if (!ticket.saleType) return false;
@@ -1358,12 +1368,16 @@ function debugTicketData() {
     
     console.log("All unique sale types:", Array.from(saleTypes));
     
-    // Count tickets with "Stubhub" exactly
-    const exactStubhub = ticketData.filter(ticket => 
-        ticket.saleType === 'Stubhub'
-    ).length;
+    // Show detailed StubHub capitalization info
+    const stubhubVariants = {
+        'StubHub': ticketData.filter(ticket => ticket.saleType === 'StubHub').length,
+        'Stubhub': ticketData.filter(ticket => ticket.saleType === 'Stubhub').length,
+        'STUBHUB': ticketData.filter(ticket => ticket.saleType === 'STUBHUB').length,
+        'stubhub': ticketData.filter(ticket => ticket.saleType === 'stubhub').length,
+        'Stub Hub': ticketData.filter(ticket => ticket.saleType === 'Stub Hub').length
+    };
     
-    console.log("Tickets with exactly 'Stubhub':", exactStubhub);
+    console.log("StubHub capitalization variants:", stubhubVariants);
     
     // Show sample tickets
     console.log("Sample tickets:");
@@ -2051,10 +2065,10 @@ async function fetchSheetData() {
                     profitPercentage: profitPercentage,
                     profit: profit,
                     // Derived fields for analytics
-                    isSold: !!dateSold || (saleType === 'Stubhub'), // A ticket is sold if it has a date sold or is a StubHub ticket
+                    isSold: !!dateSold || (saleType === 'StubHub' || saleType === 'Stubhub'), // A ticket is sold if it has a date sold or is a StubHub ticket
                     year: concertDate ? concertDate.getFullYear() : null,
                     month: concertDate ? concertDate.getMonth() : null,
-                    isStubHub: saleType === 'Stubhub' // Flag for StubHub tickets
+                    isStubHub: saleType === 'StubHub' || saleType === 'Stubhub' // Flag for StubHub tickets
                 };
             }).filter(ticket => ticket !== null);
             
