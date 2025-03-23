@@ -755,12 +755,63 @@
     
     <!-- Netlify Identity Authentication Handler -->
     <script>
+        // Hide all dashboard content immediately
         document.addEventListener('DOMContentLoaded', function() {
-            // Login/logout button functionality
+            // Check if we're in development mode
+            const isLocalDev = window.location.hostname === 'localhost' || 
+                             window.location.hostname === '127.0.0.1' || 
+                             window.location.protocol === 'file:';
+            
+            // IMMEDIATELY hide all dashboard content in production
+            if (!isLocalDev) {
+                console.log("PRODUCTION MODE: Hiding dashboard content by default");
+                document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
+                    if (elem) elem.style.display = 'none';
+                });
+                
+                // Add a large message indicating login required
+                const container = document.querySelector('.container');
+                if (container) {
+                    const loginMessage = document.createElement('div');
+                    loginMessage.id = 'login-required-message';
+                    loginMessage.style.textAlign = 'center';
+                    loginMessage.style.margin = '50px auto';
+                    loginMessage.style.padding = '30px';
+                    loginMessage.style.backgroundColor = '#f8f9fa';
+                    loginMessage.style.borderRadius = '8px';
+                    loginMessage.style.maxWidth = '600px';
+                    loginMessage.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
+                    loginMessage.innerHTML = `
+                        <h2 style="color: var(--primary-color); margin-bottom: 20px;">Login Required</h2>
+                        <p style="font-size: 1.1rem; margin-bottom: 25px;">Please log in to access the FordAmp Profit Dashboard.</p>
+                        <button class="button" id="main-login-button" style="background-color: var(--secondary-color); font-size: 1.1rem; padding: 12px 30px;">
+                            <i class="fas fa-lock"></i> Login to Dashboard
+                        </button>
+                    `;
+                    
+                    // Insert after header
+                    const header = document.querySelector('header');
+                    if (header && header.nextSibling) {
+                        container.insertBefore(loginMessage, header.nextSibling);
+                        
+                        // Add event listener to this button
+                        setTimeout(() => {
+                            const mainLoginButton = document.getElementById('main-login-button');
+                            if (mainLoginButton) {
+                                mainLoginButton.addEventListener('click', function() {
+                                    netlifyIdentity.open('login');
+                                });
+                            }
+                        }, 100);
+                    }
+                }
+            }
+            
+            // Login button functionality
             const loginButton = document.getElementById('login-button');
             if (loginButton) {
                 loginButton.addEventListener('click', function() {
-                    netlifyIdentity.open();
+                    netlifyIdentity.open('login');
                 });
             }
             
@@ -769,63 +820,106 @@
             const userEmail = document.getElementById('user-email');
             if (userInfo) userInfo.style.display = 'none';
             
-            // Check if we're in development mode
-            const isLocalDev = window.location.hostname === 'localhost' || 
-                             window.location.hostname === '127.0.0.1' || 
-                             window.location.protocol === 'file:';
-            
             // Always show content in development mode
             if (isLocalDev) {
+                console.log("DEVELOPMENT MODE: Showing dashboard content by default");
                 document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
                     if (elem) elem.style.display = '';
                 });
             }
             
+            // Security check function
+            function enforceAuthentication() {
+                const user = netlifyIdentity.currentUser();
+                console.log("Security check - Current user:", user ? user.email : "none");
+                
+                if (!isLocalDev && !user) {
+                    console.log("SECURITY ENFORCEMENT: No authenticated user in production");
+                    // Hide dashboard content
+                    document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
+                        if (elem) elem.style.display = 'none';
+                    });
+                    
+                    // Show login message
+                    const loginMessage = document.getElementById('login-required-message');
+                    if (loginMessage) loginMessage.style.display = 'block';
+                    
+                    // Prompt for login
+                    setTimeout(() => {
+                        netlifyIdentity.open('login');
+                    }, 800);
+                    
+                    return false;
+                }
+                return true;
+            }
+            
+            // Run security check immediately and periodically
+            enforceAuthentication();
+            setInterval(enforceAuthentication, 3000); // Check every 3 seconds
+            
             // Basic Netlify Identity handlers
             netlifyIdentity.on('init', user => {
+                console.log("Netlify Identity initialized. User:", user ? user.email : "none");
+                
                 if (user) {
                     // User is logged in
+                    console.log("User is authenticated:", user.email);
                     if (loginButton) loginButton.style.display = 'none';
                     if (userInfo) userInfo.style.display = 'block';
                     if (userEmail) userEmail.textContent = user.email;
                     
+                    // Show dashboard content
                     document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
                         if (elem) elem.style.display = '';
                     });
-                } else if (!isLocalDev) {
-                    // User is not logged in (in production)
-                    setTimeout(() => netlifyIdentity.open('login'), 800);
                     
-                    document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
-                        if (elem) elem.style.display = 'none';
-                    });
+                    // Hide login message
+                    const loginMessage = document.getElementById('login-required-message');
+                    if (loginMessage) loginMessage.style.display = 'none';
+                } else if (!isLocalDev) {
+                    console.log("No authenticated user - hiding dashboard");
+                    // Enforce security again
+                    enforceAuthentication();
                 }
             });
             
             netlifyIdentity.on('login', user => {
+                console.log("Login event - User:", user.email);
                 // User logged in
                 if (loginButton) loginButton.style.display = 'none';
                 if (userInfo) userInfo.style.display = 'block';
                 if (userEmail) userEmail.textContent = user.email;
                 
+                // Show dashboard content
                 document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
                     if (elem) elem.style.display = '';
                 });
                 
+                // Hide login message
+                const loginMessage = document.getElementById('login-required-message');
+                if (loginMessage) loginMessage.style.display = 'none';
+                
                 netlifyIdentity.close();
-                window.location.reload();
+                // Force a clean reload to ensure everything is consistent
+                setTimeout(() => {
+                    window.location.href = window.location.origin + window.location.pathname;
+                }, 800);
             });
             
             netlifyIdentity.on('logout', () => {
+                console.log("Logout event triggered");
                 // User logged out
                 if (loginButton) loginButton.style.display = 'inline-block';
                 if (userInfo) userInfo.style.display = 'none';
                 
                 if (!isLocalDev) {
-                    document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
-                        if (elem) elem.style.display = 'none';
-                    });
-                    window.location.reload();
+                    // Enforce security
+                    enforceAuthentication();
+                    // Force reload
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
                 }
             });
         });
