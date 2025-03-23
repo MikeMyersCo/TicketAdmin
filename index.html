@@ -7,21 +7,42 @@
     <!-- Netlify Identity Widget -->
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <script>
-        // Configure Netlify Identity to allow unconfirmed logins
+        // Configure Netlify Identity
         document.addEventListener('DOMContentLoaded', function() {
             if (window.netlifyIdentity) {
                 console.log("Setting Netlify Identity config");
+                
+                // Check for invite token in URL
+                const params = new URLSearchParams(window.location.search);
+                const inviteToken = params.get('invite');
+                
+                if (inviteToken) {
+                    console.log("Invite token detected in URL");
+                    // When user arrives with an invite token, automatically show the accept invite screen
+                    setTimeout(() => {
+                        netlifyIdentity.open('signup');
+                    }, 500);
+                }
+                
+                // Basic configuration
                 window.netlifyIdentity.setConfig({
-                    allowUnconfirmedLogin: true
+                    allowUnconfirmedLogin: true,
+                    localUrl: window.location.origin
                 });
                 
-                // Hook into error events to handle confirmation errors
+                // Hook into error events to handle login issues
                 window.netlifyIdentity.on('error', err => {
                     console.error('Netlify Identity error:', err);
-                    // If there's a confirmation error, try to bypass it
+                    
+                    // User-friendly error message
                     if (err.message.includes('email not confirmed')) {
-                        alert('Bypassing email confirmation. Please try logging in again.');
-                        window.netlifyIdentity.refresh();
+                        alert('Your email is not confirmed yet. Please check your email for a confirmation link from Netlify.');
+                    } else if (err.message.includes('No user found')) {
+                        alert('No account found with that email. Please check your spelling or sign up for a new account.');
+                    } else if (err.message.includes('password invalid')) {
+                        alert('Invalid password. Please try again or use the "Forgot password" option.');
+                    } else {
+                        alert('Login error: ' + err.message);
                     }
                 });
             } else {
@@ -30,7 +51,8 @@
                 setTimeout(() => {
                     if (window.netlifyIdentity) {
                         window.netlifyIdentity.setConfig({
-                            allowUnconfirmedLogin: true
+                            allowUnconfirmedLogin: true,
+                            localUrl: window.location.origin
                         });
                     }
                 }, 1000);
@@ -793,6 +815,23 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log("Setting up Netlify Identity handlers");
             
+            // Check for recovery token or invite token in URL
+            const params = new URLSearchParams(window.location.search);
+            const recoveryToken = params.get('recovery_token');
+            const inviteToken = params.get('invite_token') || params.get('invite');
+            
+            if (recoveryToken) {
+                console.log("Recovery token found in URL");
+                setTimeout(() => {
+                    netlifyIdentity.open('recovery');
+                }, 500);
+            } else if (inviteToken) {
+                console.log("Invite token found in URL");
+                setTimeout(() => {
+                    netlifyIdentity.open('signup');
+                }, 500);
+            }
+            
             // Initialize UI first even if user is not available yet
             updateUserUI(null);
             
@@ -800,19 +839,21 @@
             let user;
             try {
                 user = netlifyIdentity.currentUser();
-                console.log("Current user:", user ? user.email : "none");
+                console.log("Current user on load:", user ? user.email : "none");
                 updateUserUI(user);
             } catch (e) {
                 console.warn("Error getting current user:", e);
-                // Will retry after a delay
             }
             
-            // Listen for login events
+            // Register all event handlers
+            netlifyIdentity.on('init', user => {
+                console.log('Netlify Identity initialized:', user ? 'User exists' : 'No user');
+                updateUserUI(user);
+            });
+            
             netlifyIdentity.on('login', user => {
                 console.log('Login event triggered:', user.email);
                 updateUserUI(user);
-                
-                // Hide the login modal
                 netlifyIdentity.close();
                 
                 // Refresh data after login
@@ -820,38 +861,48 @@
                     fetchSheetData();
                 }
                 
-                // Force a page refresh - sometimes helps with persistence
-                // Uncomment if still having issues
-                // setTimeout(() => { window.location.reload(); }, 1000);
+                // Force page refresh after login
+                window.location.href = window.location.origin + window.location.pathname;
             });
             
-            // Listen for logout events
             netlifyIdentity.on('logout', () => {
                 console.log('Logout event triggered');
                 updateUserUI(null);
+                
+                // Refresh page after logout
+                window.location.reload();
             });
             
-            // Listen for user events
-            netlifyIdentity.on('init', user => {
-                console.log('Netlify Identity initialized:', user ? 'User exists' : 'No user');
+            netlifyIdentity.on('error', err => {
+                console.error('Identity error:', err);
+                // Let the configuration handle error alerts
+            });
+            
+            netlifyIdentity.on('close', () => {
+                console.log('Identity widget closed');
+            });
+            
+            netlifyIdentity.on('user:update', () => {
+                console.log('User updated');
+                user = netlifyIdentity.currentUser();
                 updateUserUI(user);
             });
             
-            // Handle signup events
+            // Handle invitation acceptance
             netlifyIdentity.on('signup', user => {
-                console.log('Signup success! Attempting login...');
-                // Sometimes an automatic login is needed after signup
+                console.log('Signup success!');
                 setTimeout(() => {
-                    netlifyIdentity.open('login');
-                }, 1000);
+                    // After signup from invite, reload the page
+                    window.location.href = window.location.origin + window.location.pathname;
+                }, 2000);
             });
             
-            // Show login modal automatically in production
+            // Show login modal automatically in production (but not if there's an invite token)
             const isLocalDev = window.location.hostname === 'localhost' || 
-                window.location.hostname === '127.0.0.1' || 
-                window.location.protocol === 'file:';
+                              window.location.hostname === '127.0.0.1' || 
+                              window.location.protocol === 'file:';
             
-            if (!user && !isLocalDev) {
+            if (!user && !isLocalDev && !inviteToken && !recoveryToken) {
                 console.log("Auto-opening login dialog (production mode)");
                 setTimeout(() => {
                     try {
@@ -874,10 +925,12 @@
             
             // Local development check
             const isLocalDev = window.location.hostname === 'localhost' || 
-                window.location.hostname === '127.0.0.1' || 
-                window.location.protocol === 'file:';
+                              window.location.hostname === '127.0.0.1' || 
+                              window.location.protocol === 'file:';
             
-            console.log("Is local development:", isLocalDev);
+            // Check for invitation token
+            const params = new URLSearchParams(window.location.search);
+            const hasInviteToken = params.has('invite_token') || params.has('invite');
             
             if (user) {
                 // User is logged in
@@ -899,9 +952,10 @@
                 if (userInfo) userInfo.style.display = 'none';
                 if (userEmail) userEmail.textContent = '';
                 
-                // Show dashboard in local development even when logged out
-                if (isLocalDev) {
-                    console.log("Local development mode - showing dashboard even without login");
+                // Always show dashboard in local development
+                // Also show if there's an invite token (user is in process of accepting invite)
+                if (isLocalDev || hasInviteToken) {
+                    console.log("Special condition - showing dashboard without login");
                     document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
                         if (elem) elem.style.display = '';
                     });
