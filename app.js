@@ -661,10 +661,13 @@ function updateRecentStubHubSales(data) {
         
         // Process real data
         if (data.length > 0) {
-            // Filter to include StubHub/SeatGeek/Ticketmaster resale platforms (more flexible definition)
-            // Also including any sale type with "hub" in the name
+            // Filter to include StubHub with exact match for 'Stubhub'
+            // Also including other resale platforms with flexible matching
             const stubHubSales = data.filter(ticket => 
                 ticket.saleType && (
+                    ticket.saleType === 'Stubhub' || // Exact match with capital S
+                    ticket.saleType.toLowerCase() === 'stubhub' || // Case insensitive match
+                    ticket.saleType.toLowerCase() === 'stub hub' || // With space
                     ticket.saleType.toLowerCase().includes('hub') ||
                     ticket.saleType.toLowerCase().includes('seat') ||
                     ticket.saleType.toLowerCase().includes('resale') ||
@@ -726,6 +729,9 @@ function updateRecentStubHubSales(data) {
             // StubHub sales in the entire dataset (might be filtered out)
             const allStubHubSales = ticketData.filter(ticket => 
                 ticket.saleType && (
+                    ticket.saleType === 'Stubhub' || // Exact match with capital S
+                    ticket.saleType.toLowerCase() === 'stubhub' || // Case insensitive match
+                    ticket.saleType.toLowerCase() === 'stub hub' || // With space
                     ticket.saleType.toLowerCase().includes('hub') ||
                     ticket.saleType.toLowerCase().includes('seat') ||
                     ticket.saleType.toLowerCase().includes('resale') ||
@@ -884,9 +890,12 @@ function updateStubHubSalesByDay(data) {
         
         // Process real data
         if (data.length > 0) {
-            // Filter to include more types of resale platforms
+            // Filter with exact match for 'Stubhub' and other resale platforms
             const stubHubSales = data.filter(ticket => 
                 ticket.saleType && (
+                    ticket.saleType === 'Stubhub' || // Exact match with capital S
+                    ticket.saleType.toLowerCase() === 'stubhub' || // Case insensitive match
+                    ticket.saleType.toLowerCase() === 'stub hub' || // With space
                     ticket.saleType.toLowerCase().includes('hub') ||
                     ticket.saleType.toLowerCase().includes('seat') ||
                     ticket.saleType.toLowerCase().includes('resale') ||
@@ -922,9 +931,12 @@ function updateStubHubSalesByDay(data) {
                 return;
             }
             
-            // Check entire dataset for StubHub sales
+            // Check entire dataset for StubHub sales with exact match for 'Stubhub'
             const allStubHubSales = ticketData.filter(ticket => 
                 ticket.saleType && (
+                    ticket.saleType === 'Stubhub' || // Exact match with capital S
+                    ticket.saleType.toLowerCase() === 'stubhub' || // Case insensitive match
+                    ticket.saleType.toLowerCase() === 'stub hub' || // With space
                     ticket.saleType.toLowerCase().includes('hub') ||
                     ticket.saleType.toLowerCase().includes('seat') ||
                     ticket.saleType.toLowerCase().includes('resale') ||
@@ -1135,12 +1147,64 @@ function formatPercentage(value) {
     }).format(value / 100);
 }
 
+// Debug function to inspect sale types in the data
+function debugSaleTypes() {
+    console.log("==== DEBUGGING SALE TYPES ====");
+    
+    // Log the complete ticketData array to check raw data
+    console.log(`Total tickets: ${ticketData.length}`);
+    
+    // Extract and log all unique sale types
+    const saleTypes = new Set();
+    ticketData.forEach(ticket => {
+        if (ticket.saleType) {
+            saleTypes.add(ticket.saleType);
+        }
+    });
+    
+    console.log("Unique sale types found:", Array.from(saleTypes));
+    
+    // Count StubHub tickets with various detection methods
+    const exactStubHub = ticketData.filter(ticket => 
+        ticket.saleType && ticket.saleType.toLowerCase() === 'stubhub'
+    ).length;
+    
+    const containsHub = ticketData.filter(ticket => 
+        ticket.saleType && ticket.saleType.toLowerCase().includes('hub')
+    ).length;
+    
+    const containsSeat = ticketData.filter(ticket => 
+        ticket.saleType && ticket.saleType.toLowerCase().includes('seat')
+    ).length;
+    
+    console.log("Exact 'stubhub' count:", exactStubHub);
+    console.log("Contains 'hub' count:", containsHub);
+    console.log("Contains 'seat' count:", containsSeat);
+    
+    // Log some sample tickets for inspection
+    console.log("Sample tickets for inspection:");
+    ticketData.slice(0, 5).forEach((ticket, index) => {
+        console.log(`Ticket ${index}:`, {
+            concert: ticket.concert,
+            saleType: ticket.saleType,
+            salePrice: ticket.salePrice,
+            dateSold: ticket.dateSold,
+            isSold: ticket.isSold
+        });
+    });
+    
+    console.log("==== END DEBUGGING ====");
+}
+
 // Calculate StubHub metrics compared to direct sales
 function calculateStubHubMetrics(data) {
     try {
-        // Find StubHub/resale tickets using our improved resale detection
+        // Find StubHub/resale tickets with exact match for 'Stubhub'
         const stubHubTickets = data.filter(ticket => 
             ticket.saleType && (
+                ticket.saleType === 'Stubhub' || // Exact match with capital S
+                ticket.saleType.toLowerCase() === 'stubhub' || // Case insensitive match
+                ticket.saleType.toLowerCase() === 'stub hub' || // With space
                 ticket.saleType.toLowerCase().includes('hub') ||
                 ticket.saleType.toLowerCase().includes('seat') ||
                 ticket.saleType.toLowerCase().includes('resale') ||
@@ -1151,6 +1215,9 @@ function calculateStubHubMetrics(data) {
         // Find direct sales (anything not matching the resale patterns)
         const directTickets = data.filter(ticket => 
             ticket.saleType && !(
+                ticket.saleType === 'Stubhub' || // Exact match with capital S
+                ticket.saleType.toLowerCase() === 'stubhub' || // Case insensitive match
+                ticket.saleType.toLowerCase() === 'stub hub' || // With space
                 ticket.saleType.toLowerCase().includes('hub') ||
                 ticket.saleType.toLowerCase().includes('seat') ||
                 ticket.saleType.toLowerCase().includes('resale') ||
