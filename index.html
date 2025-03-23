@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>FordAmp Profit Dashboard (Suite NT1-D)</title>
     <!-- Netlify Identity Widget with direct loader -->
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
@@ -549,25 +549,41 @@
 
         /* Responsive styles */
         @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+            
             .kpi-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
 
             h1 {
-                font-size: 2rem;
+                font-size: 1.8rem;
+                padding: 0 10px;
             }
 
             .header-tagline {
                 font-size: 1rem;
+                padding: 0 15px;
             }
 
             .dashboard-card-content {
-                height: 250px;
+                height: 300px; /* Taller for better mobile viewing */
+            }
+            
+            .dashboard-card {
+                margin-bottom: 15px;
+                border-radius: 10px; /* Slightly more rounded corners */
+            }
+            
+            .dashboard-card-title {
+                font-size: 1.2rem;
             }
 
             .filters {
                 flex-direction: column;
                 gap: 15px;
+                padding: 15px;
             }
 
             .date-range-group {
@@ -578,7 +594,7 @@
             .action-bar {
                 flex-direction: column;
                 gap: 10px;
-                padding: 10px;
+                padding: 15px;
             }
 
             .refresh-container {
@@ -591,12 +607,67 @@
                 justify-content: center;
                 margin-top: 10px;
             }
+            
+            /* Improve touch targets for mobile */
+            select, input, .button {
+                padding: 12px 15px;
+                font-size: 16px; /* Better for touch */
+                min-height: 48px; /* Minimum recommended touch target size */
+            }
+            
+            label {
+                margin-bottom: 8px;
+                font-size: 1rem;
+            }
+            
+            /* Improve table readability on mobile */
+            table {
+                font-size: 0.9rem;
+            }
+            
+            table th, table td {
+                padding: 8px 5px;
+            }
+            
+            /* Improve header readability */
+            .header-content {
+                padding: 30px 10px;
+            }
+            
+            /* Make KPI numbers more readable */
+            .kpi-value {
+                font-size: 1.6rem;
+            }
+            
+            /* Style StubHub analytics for mobile */
+            #stubhub-sales-count, #stubhub-avg-price, #stubhub-price-diff {
+                font-size: 1.8rem !important;
+                word-break: break-word;
+            }
         }
 
         /* For very small screens */
         @media (max-width: 500px) {
             .kpi-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            /* Make sure elements have enough space */
+            .dashboard-card {
+                margin-bottom: 15px;
+            }
+            
+            /* Ensure charts are visible */
+            .dashboard-card-content {
+                height: 250px;
             }
         }
     </style>
