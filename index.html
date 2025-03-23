@@ -128,6 +128,29 @@
             
             // Check periodically
             setInterval(window.updateDashboardAfterLogin, 3000);
+            
+            // Mobile-specific fix - check if we're on mobile
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                console.log("Mobile device detected, adding extra checks");
+                
+                // Try multiple times with increasing delays
+                [2000, 3000, 4000].forEach(delay => {
+                    setTimeout(() => {
+                        const user = window.netlifyIdentity && window.netlifyIdentity.currentUser();
+                        if (user) {
+                            console.log(`Mobile check at ${delay}ms: User is logged in, ensuring dashboard visibility`);
+                            document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
+                                if (elem) elem.style.display = '';
+                            });
+                            
+                            // Hide login message
+                            const loginMessage = document.getElementById('login-required-message');
+                            if (loginMessage) loginMessage.style.display = 'none';
+                        }
+                    }, delay);
+                });
+            }
         });
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1138,10 +1161,22 @@
                     const loginMessage = document.getElementById('login-required-message');
                     if (loginMessage) loginMessage.style.display = 'block';
                     
-                    // Prompt for login
+                    // Prompt for login - use shorter delay for mobile
                     setTimeout(() => {
-                        netlifyIdentity.open('login');
-                    }, 800);
+                        console.log("Opening login prompt");
+                        
+                        // Try a direct call first
+                        if (window.netlifyIdentity) {
+                            window.netlifyIdentity.open('login');
+                        } else {
+                            console.warn("netlifyIdentity not available for login prompt");
+                            
+                            // Try to trigger the global login function as fallback
+                            if (typeof window.openNetlifyLogin === 'function') {
+                                window.openNetlifyLogin();
+                            }
+                        }
+                    }, 400);
                     
                     return false;
                 }
@@ -1168,9 +1203,20 @@
                     window.netlifyIdentity.close();
                     
                     // Force a clean reload to ensure everything is consistent
+                    // Use a shorter timeout for mobile
                     setTimeout(() => {
+                        // Ensure we show dashboard content immediately
+                        document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
+                            if (elem) elem.style.display = '';
+                        });
+                        
+                        // Hide login message
+                        const loginMessage = document.getElementById('login-required-message');
+                        if (loginMessage) loginMessage.style.display = 'none';
+                        
+                        // Fully reload the page to ensure all state is consistent
                         window.location.href = window.location.origin + window.location.pathname;
-                    }, 800);
+                    }, 300);
                 });
                 
                 window.netlifyIdentity.on('logout', () => {
@@ -1204,7 +1250,20 @@
                             console.log("Delayed login event. User:", user.email);
                             window.updateDashboardAfterLogin();
                             window.netlifyIdentity.close();
-                            window.location.reload();
+                            
+                            // Ensure we show dashboard content immediately
+                            document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
+                                if (elem) elem.style.display = '';
+                            });
+                            
+                            // Hide login message
+                            const loginMessage = document.getElementById('login-required-message');
+                            if (loginMessage) loginMessage.style.display = 'none';
+                            
+                            // Fully reload after showing content
+                            setTimeout(() => {
+                                window.location.href = window.location.origin + window.location.pathname;
+                            }, 300);
                         });
                         
                         window.netlifyIdentity.on('logout', () => {
