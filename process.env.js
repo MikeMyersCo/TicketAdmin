@@ -1,0 +1,4 @@
+window.ENV = {
+    GOOGLE_API_KEY: '{{ GOOGLE_API_KEY }}',
+    SPREADSHEET_ID: '{{ SPREADSHEET_ID }}'
+};
