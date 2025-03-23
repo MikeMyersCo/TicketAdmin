@@ -33,6 +33,102 @@
             document.head.appendChild(script);
             return false;
         };
+        
+        // Global function to update UI based on login state
+        window.updateDashboardAfterLogin = function() {
+            console.log("updateDashboardAfterLogin called");
+            // Get current user
+            let user = null;
+            try {
+                if (window.netlifyIdentity) {
+                    user = window.netlifyIdentity.currentUser();
+                }
+            } catch (e) {
+                console.error("Error getting current user:", e);
+            }
+            
+            console.log("Current user:", user ? user.email : "none");
+            
+            // Check if we're in development mode
+            const isLocalDev = window.location.hostname === 'localhost' || 
+                             window.location.hostname === '127.0.0.1' || 
+                             window.location.protocol === 'file:';
+                             
+            // Get UI elements
+            const loginButton = document.getElementById('login-button');
+            const userInfo = document.getElementById('user-info');
+            const userEmail = document.getElementById('user-email');
+            const loginMessage = document.getElementById('login-required-message');
+            
+            if (user) {
+                // User is logged in
+                console.log("User is logged in, updating UI");
+                
+                // Update header login button/info
+                if (loginButton) loginButton.style.display = 'none';
+                if (userInfo) userInfo.style.display = 'block';
+                if (userEmail) userEmail.textContent = user.email;
+                
+                // Show dashboard content
+                document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
+                    if (elem) {
+                        console.log("Showing element:", elem.className || elem.id);
+                        elem.style.display = '';
+                    }
+                });
+                
+                // Hide login message
+                if (loginMessage) loginMessage.style.display = 'none';
+                
+                console.log("Dashboard should now be visible");
+                return true;
+            } else if (!isLocalDev) {
+                // User is not logged in (in production)
+                console.log("User is not logged in, hiding dashboard");
+                
+                // Update header login button/info
+                if (loginButton) loginButton.style.display = 'inline-block';
+                if (userInfo) userInfo.style.display = 'none';
+                
+                // Hide dashboard content
+                document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
+                    if (elem) {
+                        console.log("Hiding element:", elem.className || elem.id);
+                        elem.style.display = 'none';
+                    }
+                });
+                
+                // Show login message
+                if (loginMessage) loginMessage.style.display = 'block';
+                
+                console.log("Dashboard is now hidden");
+                return false;
+            } else {
+                // We're in local dev mode
+                console.log("Local development mode - showing dashboard regardless of login");
+                
+                // Show dashboard content
+                document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
+                    if (elem) elem.style.display = '';
+                });
+                
+                return true;
+            }
+        };
+        
+        // Set up auto-checking of login state
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log("Setting up auto-check of login state");
+            
+            // Check immediately
+            setTimeout(window.updateDashboardAfterLogin, 500);
+            
+            // Check again after a delay
+            setTimeout(window.updateDashboardAfterLogin, 1500);
+            
+            // Check periodically
+            setInterval(window.updateDashboardAfterLogin, 3000);
+        });
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -895,73 +991,72 @@
             }
             
             // Run security check immediately and periodically
-            enforceAuthentication();
-            setInterval(enforceAuthentication, 3000); // Check every 3 seconds
+            window.updateDashboardAfterLogin();
+            setInterval(window.updateDashboardAfterLogin, 3000); // Check every 3 seconds
             
-            // Basic Netlify Identity handlers
-            netlifyIdentity.on('init', user => {
-                console.log("Netlify Identity initialized. User:", user ? user.email : "none");
+            // Set up Netlify Identity handlers if available
+            if (window.netlifyIdentity) {
+                console.log("Setting up Netlify Identity event handlers");
                 
-                if (user) {
-                    // User is logged in
-                    console.log("User is authenticated:", user.email);
-                    if (loginButton) loginButton.style.display = 'none';
-                    if (userInfo) userInfo.style.display = 'block';
-                    if (userEmail) userEmail.textContent = user.email;
-                    
-                    // Show dashboard content
-                    document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
-                        if (elem) elem.style.display = '';
-                    });
-                    
-                    // Hide login message
-                    const loginMessage = document.getElementById('login-required-message');
-                    if (loginMessage) loginMessage.style.display = 'none';
-                } else if (!isLocalDev) {
-                    console.log("No authenticated user - hiding dashboard");
-                    // Enforce security again
-                    enforceAuthentication();
-                }
-            });
-            
-            netlifyIdentity.on('login', user => {
-                console.log("Login event - User:", user.email);
-                // User logged in
-                if (loginButton) loginButton.style.display = 'none';
-                if (userInfo) userInfo.style.display = 'block';
-                if (userEmail) userEmail.textContent = user.email;
-                
-                // Show dashboard content
-                document.querySelectorAll('.dashboard-container, .kpi-grid, .filters, .action-bar').forEach(elem => {
-                    if (elem) elem.style.display = '';
+                window.netlifyIdentity.on('init', user => {
+                    console.log("Netlify Identity initialized. User:", user ? user.email : "none");
+                    window.updateDashboardAfterLogin();
                 });
                 
-                // Hide login message
-                const loginMessage = document.getElementById('login-required-message');
-                if (loginMessage) loginMessage.style.display = 'none';
+                window.netlifyIdentity.on('login', user => {
+                    console.log("Login event - User:", user.email);
+                    window.updateDashboardAfterLogin();
+                    
+                    window.netlifyIdentity.close();
+                    
+                    // Force a clean reload to ensure everything is consistent
+                    setTimeout(() => {
+                        window.location.href = window.location.origin + window.location.pathname;
+                    }, 800);
+                });
                 
-                netlifyIdentity.close();
-                // Force a clean reload to ensure everything is consistent
-                setTimeout(() => {
-                    window.location.href = window.location.origin + window.location.pathname;
-                }, 800);
-            });
-            
-            netlifyIdentity.on('logout', () => {
-                console.log("Logout event triggered");
-                // User logged out
-                if (loginButton) loginButton.style.display = 'inline-block';
-                if (userInfo) userInfo.style.display = 'none';
-                
-                if (!isLocalDev) {
-                    // Enforce security
-                    enforceAuthentication();
+                window.netlifyIdentity.on('logout', () => {
+                    console.log("Logout event triggered");
+                    window.updateDashboardAfterLogin();
+                    
                     // Force reload
                     setTimeout(() => {
                         window.location.reload();
                     }, 500);
-                }
-            });
+                });
+                
+                window.netlifyIdentity.on('error', err => {
+                    console.error("Netlify Identity error:", err);
+                    alert("Login error: " + err.message);
+                });
+            } else {
+                console.warn("Netlify Identity not available yet for event handlers");
+                
+                // Try to initialize after a delay
+                setTimeout(() => {
+                    if (window.netlifyIdentity) {
+                        console.log("Setting up delayed Netlify Identity event handlers");
+                        
+                        window.netlifyIdentity.on('init', user => {
+                            console.log("Delayed init event. User:", user ? user.email : "none");
+                            window.updateDashboardAfterLogin();
+                        });
+                        
+                        window.netlifyIdentity.on('login', user => {
+                            console.log("Delayed login event. User:", user.email);
+                            window.updateDashboardAfterLogin();
+                            window.netlifyIdentity.close();
+                            window.location.reload();
+                        });
+                        
+                        window.netlifyIdentity.on('logout', () => {
+                            console.log("Delayed logout event");
+                            window.updateDashboardAfterLogin();
+                            window.location.reload();
+                        });
+                    }
+                }, 1000);
+            }
         });
     </script>
 </body>
