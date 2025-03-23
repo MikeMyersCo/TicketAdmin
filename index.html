@@ -815,6 +815,60 @@
                 </div>
             </div>
 
+            <!-- Recent StubHub Sales -->
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <div class="dashboard-card-title">
+                        <i class="fas fa-ticket-alt"></i> Recent StubHub Sales
+                    </div>
+                </div>
+                <div class="dashboard-card-content" style="overflow-y: auto;">
+                    <table id="recent-stubhub-sales" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid #e9ecef; text-align: left;">
+                                <th style="padding: 10px;">Date</th>
+                                <th style="padding: 10px;">Concert</th>
+                                <th style="padding: 10px;">Price</th>
+                                <th style="padding: 10px;">Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stubhub-sales-body">
+                            <!-- Will be populated by JavaScript -->
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 20px;">
+                                    <div class="loading-spinner active" id="stubhub-sales-loader">
+                                        <div class="spinner"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="no-data-message" id="stubhub-sales-no-data" style="display: none;">
+                        <i class="fas fa-ticket-alt"></i>
+                        <p>No StubHub sales available for the selected filters</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- StubHub Sales by Day -->
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <div class="dashboard-card-title">
+                        <i class="fas fa-calendar-week"></i> StubHub Sales by Day
+                    </div>
+                </div>
+                <div class="dashboard-card-content">
+                    <canvas id="stubhub-days-chart" class="stubhub-days-chart"></canvas>
+                    <div class="loading-spinner" id="stubhub-days-loader">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="no-data-message" id="stubhub-days-no-data" style="display: none;">
+                        <i class="fas fa-calendar-week"></i>
+                        <p>No StubHub sales data available for the selected filters</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 

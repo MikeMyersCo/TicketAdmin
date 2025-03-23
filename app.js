@@ -1,6 +1,6 @@
 // Global variables for data and charts
 let ticketData = [];
-let profitChart, salesTypeChart, topConcertsChart, priceDistChart, timelineChart;
+let profitChart, salesTypeChart, topConcertsChart, priceDistChart, timelineChart, stubhubDaysChart;
 
 // Chart color scheme
 const chartColors = {
@@ -121,6 +121,11 @@ function updateDashboard(skipCharts = false) {
         updateSalesByTypeChart(filteredData);
         updateTopConcertsChart(filteredData);
         updatePriceDistributionChart(filteredData);
+        
+        // Update the new StubHub panels
+        updateRecentStubHubSales(filteredData);
+        updateStubHubSalesByDay(filteredData);
+        
         // Removed updateProfitTimelineChart(filteredData); - timeline chart no longer needed
     }
     
@@ -628,7 +633,217 @@ function updatePriceDistributionChart(data) {
     }
 }
 
-// Update the Profit Timeline Chart
+// Update Recent StubHub Sales Table
+function updateRecentStubHubSales(data) {
+    console.log("Updating recent StubHub sales with", data.length, "items");
+    
+    try {
+        // Get the table body element
+        const tableBody = document.getElementById('stubhub-sales-body');
+        const noDataElem = document.getElementById('stubhub-sales-no-data');
+        const loaderElem = document.getElementById('stubhub-sales-loader');
+        
+        // Initially clear and show loading
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 20px;">
+                        <div class="loading-spinner active">
+                            <div class="spinner"></div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Process real data
+        if (data.length > 0) {
+            // Filter to only include StubHub sales
+            const stubHubSales = data.filter(ticket => 
+                ticket.saleType && 
+                ticket.saleType.toLowerCase().includes('stubhub')
+            );
+            
+            console.log("StubHub sales found:", stubHubSales.length);
+            
+            if (stubHubSales.length > 0) {
+                // Sort by date (most recent first)
+                stubHubSales.sort((a, b) => (b.soldDate || 0) - (a.soldDate || 0));
+                
+                // Take only the 5 most recent
+                const recentSales = stubHubSales.slice(0, 5);
+                
+                console.log("Recent StubHub sales (top 5):", recentSales);
+                
+                // Create table rows
+                let tableHTML = '';
+                
+                recentSales.forEach(ticket => {
+                    const soldDate = ticket.soldDate ? ticket.soldDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: '2-digit'
+                    }) : 'Unknown';
+                    
+                    const concertName = ticket.concert || 'Unknown';
+                    const salePrice = formatCurrency(parseCurrency(ticket.salePrice));
+                    const profit = formatCurrency(parseCurrency(ticket.profit));
+                    
+                    const profitClass = parseCurrency(ticket.profit) >= 0 ? 'success' : 'danger';
+                    
+                    tableHTML += `
+                        <tr style="border-bottom: 1px solid #f1f1f1;">
+                            <td style="padding: 10px;">${soldDate}</td>
+                            <td style="padding: 10px;">${concertName}</td>
+                            <td style="padding: 10px;">${salePrice}</td>
+                            <td style="padding: 10px; color: var(--${profitClass});">${profit}</td>
+                        </tr>
+                    `;
+                });
+                
+                // Update table content
+                if (tableBody) {
+                    tableBody.innerHTML = tableHTML;
+                }
+                
+                // Hide no-data message
+                if (noDataElem) {
+                    noDataElem.style.display = 'none';
+                }
+                
+                return;
+            }
+        }
+        
+        // If we have no data, show the no-data message
+        if (tableBody) {
+            tableBody.innerHTML = '';
+        }
+        
+        if (noDataElem) {
+            noDataElem.style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error("Error updating StubHub sales table:", error);
+        // Show no-data message in case of error
+        const noDataElem = document.getElementById('stubhub-sales-no-data');
+        if (noDataElem) {
+            noDataElem.style.display = 'block';
+        }
+    }
+}
+
+// Update StubHub Sales by Day of Week Chart
+function updateStubHubSalesByDay(data) {
+    console.log("Updating StubHub sales by day chart with", data.length, "items");
+    
+    // Initialize chart if needed
+    if (!stubhubDaysChart) {
+        console.log("stubhubDaysChart not found, initializing");
+        const stubhubDaysCtx = document.getElementById('stubhub-days-chart');
+        if (stubhubDaysCtx) {
+            stubhubDaysChart = new Chart(stubhubDaysCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    datasets: [{
+                        label: 'Number of Sales',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        backgroundColor: chartColors.primaryLight,
+                        borderColor: chartColors.primary,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    return value === 1 ? '1 Sale' : `${value} Sales`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            console.error("Cannot find stubhub-days-chart element");
+            return;
+        }
+    }
+    
+    try {
+        const noDataElem = document.getElementById('stubhub-days-no-data');
+        const loaderElem = document.getElementById('stubhub-days-loader');
+        
+        // Process real data
+        if (data.length > 0) {
+            // Filter to only include StubHub sales with sold dates
+            const stubHubSales = data.filter(ticket => 
+                ticket.saleType && 
+                ticket.saleType.toLowerCase().includes('stubhub') && 
+                ticket.soldDate
+            );
+            
+            console.log("StubHub sales with dates:", stubHubSales.length);
+            
+            if (stubHubSales.length > 0) {
+                // Count sales by day of week (0 = Sunday, 6 = Saturday)
+                const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+                
+                stubHubSales.forEach(ticket => {
+                    if (ticket.soldDate) {
+                        const dayOfWeek = ticket.soldDate.getDay(); // 0-6
+                        dayCounts[dayOfWeek]++;
+                    }
+                });
+                
+                console.log("Sales by day of week:", dayCounts);
+                
+                // Update chart data
+                stubhubDaysChart.data.datasets[0].data = dayCounts;
+                stubhubDaysChart.update();
+                
+                // Hide no-data message
+                if (noDataElem) {
+                    noDataElem.style.display = 'none';
+                }
+                
+                return;
+            }
+        }
+        
+        // If we have no data, show the no-data message
+        if (noDataElem) {
+            noDataElem.style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error("Error updating StubHub days chart:", error);
+        // Show no-data message in case of error
+        const noDataElem = document.getElementById('stubhub-days-no-data');
+        if (noDataElem) {
+            noDataElem.style.display = 'block';
+        }
+    }
+}
+
+// Update the Profit Timeline Chart - kept for reference but not used
 function updateProfitTimelineChart(data) {
     console.log("Updating profit timeline chart with", data.length, "items");
     
@@ -945,6 +1160,11 @@ function initializeCharts() {
             timelineChart.destroy();
             timelineChart = null;
         }
+        if (stubhubDaysChart) {
+            console.log('Destroying existing stubhubDaysChart');
+            stubhubDaysChart.destroy();
+            stubhubDaysChart = null;
+        }
     
         // Profit Percentage Chart
         const profitCtx = document.getElementById('profit-percentage-chart');
@@ -1160,6 +1380,59 @@ function initializeCharts() {
         });
     } else {
         console.warn('profit-timeline-chart element not found');
+    }
+    
+    // StubHub Sales by Day Chart
+    const stubhubDaysCtx = document.getElementById('stubhub-days-chart');
+    if (stubhubDaysCtx) {
+        console.log('Found stubhub-days-chart element');
+        
+        // Check if the canvas already has a chart
+        if (Chart.getChart(stubhubDaysCtx)) {
+            console.log('Chart already exists on this canvas, destroying it');
+            Chart.getChart(stubhubDaysCtx).destroy();
+        }
+        
+        stubhubDaysChart = new Chart(stubhubDaysCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                datasets: [{
+                    label: 'Number of Sales',
+                    data: [0, 0, 0, 0, 0, 0, 0],
+                    backgroundColor: chartColors.primaryLight,
+                    borderColor: chartColors.primary,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                return value === 1 ? '1 Sale' : `${value} Sales`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        console.warn('stubhub-days-chart element not found');
     }
     } catch (error) {
         console.error('Error initializing charts:', error);
@@ -1509,6 +1782,12 @@ function showNoDataMessages() {
     document.querySelectorAll('.loading-spinner').forEach(spinner => {
         spinner.classList.remove('active');
     });
+    
+    // Clear the StubHub sales table
+    const stubhubSalesBody = document.getElementById('stubhub-sales-body');
+    if (stubhubSalesBody) {
+        stubhubSalesBody.innerHTML = '';
+    }
 }
 
 // Populate filter dropdowns with data
