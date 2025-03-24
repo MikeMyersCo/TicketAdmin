@@ -1,6 +1,6 @@
 // Global variables for data and charts
 let ticketData = [];
-let profitChart, salesTypeChart, topConcertsChart, priceDistChart, timelineChart, stubhubDaysChart;
+let profitChart, salesTypeChart, topConcertsChart, timelineChart, stubhubDaysChart;
 
 // Chart color scheme
 const chartColors = {
@@ -123,7 +123,6 @@ function updateDashboard(skipCharts = false) {
         updateProfitPercentageChart(filteredData);
         updateSalesByTypeChart(filteredData);
         updateTopConcertsChart(filteredData);
-        updatePriceDistributionChart(filteredData);
         
         // Update the StubHub panels
         updateRecentStubHubSales(filteredData);
@@ -552,89 +551,6 @@ function updateTopConcertsChart(data) {
     }
 }
 
-// Update the Price Distribution Chart
-function updatePriceDistributionChart(data) {
-    console.log("Updating price distribution chart with", data.length, "items");
-    
-    if (!priceDistChart) {
-        console.error("priceDistChart is not initialized");
-        // Try to initialize it if it doesn't exist
-        initializeCharts();
-        if (!priceDistChart) {
-            return; // Still not initialized, can't continue
-        }
-    }
-    
-    try {
-    
-        // Process real data
-        if (data.length > 0) {
-            // Create price ranges
-            const priceRanges = [
-                { min: 0, max: 50, label: '$0-$50' },
-                { min: 50, max: 100, label: '$50-$100' },
-                { min: 100, max: 150, label: '$100-$150' },
-                { min: 150, max: 200, label: '$150-$200' },
-                { min: 200, max: 300, label: '$200-$300' },
-                { min: 300, max: 400, label: '$300-$400' },
-                { min: 400, max: 500, label: '$400-$500' },
-                { min: 500, max: Infinity, label: '$500+' }
-            ];
-            
-            // Count tickets in each price range
-            const priceCounts = priceRanges.map(range => ({
-                range: range,
-                count: 0
-            }));
-            
-            // Assign tickets to price ranges
-            data.forEach(ticket => {
-                const price = parseCurrency(ticket.salePrice);
-                const rangeIndex = priceRanges.findIndex(range => 
-                    price >= range.min && price < range.max
-                );
-                
-                if (rangeIndex >= 0) {
-                    priceCounts[rangeIndex].count++;
-                }
-            });
-            
-            console.log("Price counts:", priceCounts);
-            
-            // Filter out empty ranges
-            const activeRanges = priceCounts.filter(item => item.count > 0);
-            
-            console.log("Active price ranges:", activeRanges);
-            
-            if (activeRanges.length > 0) {
-                // Update chart
-                priceDistChart.data.labels = activeRanges.map(item => item.range.label);
-                priceDistChart.data.datasets[0].data = activeRanges.map(item => item.count);
-                priceDistChart.update();
-                
-                // Hide no-data message
-                const noDataElem = document.getElementById('price-dist-no-data');
-                if (noDataElem) {
-                    noDataElem.style.display = 'none';
-                }
-                return;
-            }
-        }
-        
-        // If we have no data, show the no-data message
-        const noDataElem = document.getElementById('price-dist-no-data');
-        if (noDataElem) {
-            noDataElem.style.display = 'block';
-        }
-    } catch (error) {
-        console.error("Error updating price distribution chart:", error);
-        // Show no-data message in case of error
-        const noDataElem = document.getElementById('price-dist-no-data');
-        if (noDataElem) {
-            noDataElem.style.display = 'block';
-        }
-    }
-}
 
 // Update Recent StubHub Sales Table
 function updateRecentStubHubSales(data) {
@@ -1561,11 +1477,7 @@ function initializeCharts() {
             topConcertsChart.destroy();
             topConcertsChart = null;
         }
-        if (priceDistChart) {
-            console.log('Destroying existing priceDistChart');
-            priceDistChart.destroy();
-            priceDistChart = null;
-        }
+        // Price distribution chart removed
         if (timelineChart) {
             console.log('Destroying existing timelineChart');
             timelineChart.destroy();
@@ -1694,48 +1606,6 @@ function initializeCharts() {
         });
     }
 
-    // Price Distribution Chart
-    const priceDistCtx = document.getElementById('price-distribution-chart');
-    if (priceDistCtx) {
-        console.log('Found price-distribution-chart element');
-        
-        // Check if the canvas already has a chart
-        if (Chart.getChart(priceDistCtx)) {
-            console.log('Chart already exists on this canvas, destroying it');
-            Chart.getChart(priceDistCtx).destroy();
-        }
-        
-        priceDistChart = new Chart(priceDistCtx, {
-            type: 'bar',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Number of Tickets',
-                    data: [],
-                    backgroundColor: chartColors.primaryLight,
-                    borderColor: chartColors.primary,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        }
-                    }
-                }
-            }
-        });
-    }
 
     // Profit Timeline Chart
     const timelineCtx = document.getElementById('profit-timeline-chart');
@@ -1954,8 +1824,7 @@ async function fetchSheetData() {
         }
         
         // Make sure charts are initialized before proceeding
-        if (!profitChart || !salesTypeChart || !topConcertsChart || 
-            !priceDistChart || !timelineChart) {
+        if (!profitChart || !salesTypeChart || !topConcertsChart || !timelineChart) {
             console.log('Charts not initialized, initializing now');
             initializeCharts();
         }
