@@ -1072,6 +1072,423 @@ function formatCurrency(value) {
     }).format(value);
 }
 
+// Function to show concert details in popup
+function showConcertPopup(concert, profitMargin) {
+    // Create popup overlay
+    const popup = document.createElement('div');
+    popup.style.position = 'fixed';
+    popup.style.top = '0';
+    popup.style.left = '0';
+    popup.style.right = '0';
+    popup.style.bottom = '0';
+    popup.style.backgroundColor = 'rgba(0,0,0,0.7)';
+    popup.style.display = 'flex';
+    popup.style.justifyContent = 'center';
+    popup.style.alignItems = 'center';
+    popup.style.zIndex = '1000';
+    
+    // Create popup content
+    const content = document.createElement('div');
+    content.style.backgroundColor = 'white';
+    content.style.borderRadius = '8px';
+    content.style.padding = '20px';
+    content.style.width = '90%';
+    content.style.maxWidth = '600px';
+    content.style.maxHeight = '80vh';
+    content.style.overflowY = 'auto';
+    content.style.position = 'relative';
+    
+    // Close button
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '&times;';
+    closeButton.style.position = 'absolute';
+    closeButton.style.top = '10px';
+    closeButton.style.right = '10px';
+    closeButton.style.border = 'none';
+    closeButton.style.background = 'none';
+    closeButton.style.fontSize = '24px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.onclick = () => document.body.removeChild(popup);
+    
+    // Title
+    const title = document.createElement('h3');
+    title.textContent = concert;
+    title.style.color = 'var(--primary-color)';
+    title.style.marginTop = '0';
+    title.style.marginBottom = '20px';
+    
+    // Stats container
+    const statsContainer = document.createElement('div');
+    statsContainer.style.display = 'flex';
+    statsContainer.style.flexWrap = 'wrap';
+    statsContainer.style.gap = '15px';
+    statsContainer.style.marginBottom = '20px';
+    
+    // Stats: Profit Margin
+    const profitStat = document.createElement('div');
+    profitStat.style.flex = '1';
+    profitStat.style.backgroundColor = 'var(--light-bg)';
+    profitStat.style.padding = '15px';
+    profitStat.style.borderRadius = '8px';
+    profitStat.style.textAlign = 'center';
+    profitStat.style.minWidth = '150px';
+    
+    const profitLabel = document.createElement('div');
+    profitLabel.textContent = 'Profit Margin';
+    profitLabel.style.fontSize = '0.9rem';
+    profitLabel.style.color = 'var(--grey-dark)';
+    profitLabel.style.marginBottom = '5px';
+    
+    const profitValue = document.createElement('div');
+    profitValue.textContent = profitMargin.toFixed(1) + '%';
+    profitValue.style.fontSize = '1.8rem';
+    profitValue.style.fontWeight = 'bold';
+    profitValue.style.color = profitMargin > 50 ? 'var(--success)' : 'var(--secondary-color)';
+    
+    profitStat.appendChild(profitLabel);
+    profitStat.appendChild(profitValue);
+    
+    // Find relevant tickets for this concert
+    const tickets = ticketData.filter(ticket => ticket.concert === concert).slice(0, 20);
+    
+    // Stats: Ticket Count
+    const countStat = document.createElement('div');
+    countStat.style.flex = '1';
+    countStat.style.backgroundColor = 'var(--light-bg)';
+    countStat.style.padding = '15px';
+    countStat.style.borderRadius = '8px';
+    countStat.style.textAlign = 'center';
+    countStat.style.minWidth = '150px';
+    
+    const countLabel = document.createElement('div');
+    countLabel.textContent = 'Ticket Count';
+    countLabel.style.fontSize = '0.9rem';
+    countLabel.style.color = 'var(--grey-dark)';
+    countLabel.style.marginBottom = '5px';
+    
+    const countValue = document.createElement('div');
+    countValue.textContent = tickets.length;
+    countValue.style.fontSize = '1.8rem';
+    countValue.style.fontWeight = 'bold';
+    countValue.style.color = 'var(--primary-color)';
+    
+    countStat.appendChild(countLabel);
+    countStat.appendChild(countValue);
+    
+    statsContainer.appendChild(profitStat);
+    statsContainer.appendChild(countStat);
+    
+    // Ticket table
+    const tableTitle = document.createElement('h4');
+    tableTitle.textContent = 'Ticket Details';
+    tableTitle.style.marginTop = '20px';
+    tableTitle.style.marginBottom = '10px';
+    
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    
+    // Table header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    ['Sale Type', 'Price', 'Profit', 'Margin'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        th.style.textAlign = 'left';
+        th.style.padding = '8px';
+        th.style.borderBottom = '1px solid var(--grey-light)';
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    
+    // Table body
+    const tbody = document.createElement('tbody');
+    if (tickets.length > 0) {
+        tickets.forEach(ticket => {
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid var(--grey-light)';
+            
+            // Sale Type column
+            const typeCell = document.createElement('td');
+            typeCell.textContent = ticket.saleType || '-';
+            typeCell.style.padding = '8px';
+            row.appendChild(typeCell);
+            
+            // Price column
+            const priceCell = document.createElement('td');
+            priceCell.textContent = typeof ticket.salePrice === 'string' ? ticket.salePrice : '$' + (ticket.salePrice || 0).toLocaleString();
+            priceCell.style.padding = '8px';
+            row.appendChild(priceCell);
+            
+            // Profit column
+            const profitCell = document.createElement('td');
+            profitCell.textContent = typeof ticket.profit === 'string' ? ticket.profit : '$' + (ticket.profit || 0).toLocaleString();
+            profitCell.style.padding = '8px';
+            row.appendChild(profitCell);
+            
+            // Margin column
+            const marginCell = document.createElement('td');
+            marginCell.textContent = ticket.profitPercentage;
+            marginCell.style.padding = '8px';
+            marginCell.style.fontWeight = 'bold';
+            marginCell.style.color = parseFloat(ticket.profitPercentage) > 50 ? 'var(--success)' : 'var(--secondary-color)';
+            row.appendChild(marginCell);
+            
+            tbody.appendChild(row);
+        });
+    } else {
+        const emptyRow = document.createElement('tr');
+        const emptyCell = document.createElement('td');
+        emptyCell.colSpan = 4;
+        emptyCell.textContent = 'No ticket data available';
+        emptyCell.style.textAlign = 'center';
+        emptyCell.style.padding = '20px';
+        emptyRow.appendChild(emptyCell);
+        tbody.appendChild(emptyRow);
+    }
+    table.appendChild(tbody);
+    
+    // Add everything to the popup
+    content.appendChild(closeButton);
+    content.appendChild(title);
+    content.appendChild(statsContainer);
+    content.appendChild(tableTitle);
+    content.appendChild(table);
+    popup.appendChild(content);
+    
+    // Add to the body and show
+    document.body.appendChild(popup);
+    
+    // Close when clicking outside
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) {
+            document.body.removeChild(popup);
+        }
+    });
+}
+
+// Function to show sale type details in popup
+function showSaleTypePopup(saleType, revenue, percentage) {
+    // Create popup overlay
+    const popup = document.createElement('div');
+    popup.style.position = 'fixed';
+    popup.style.top = '0';
+    popup.style.left = '0';
+    popup.style.right = '0';
+    popup.style.bottom = '0';
+    popup.style.backgroundColor = 'rgba(0,0,0,0.7)';
+    popup.style.display = 'flex';
+    popup.style.justifyContent = 'center';
+    popup.style.alignItems = 'center';
+    popup.style.zIndex = '1000';
+    
+    // Create popup content
+    const content = document.createElement('div');
+    content.style.backgroundColor = 'white';
+    content.style.borderRadius = '8px';
+    content.style.padding = '20px';
+    content.style.width = '90%';
+    content.style.maxWidth = '600px';
+    content.style.maxHeight = '80vh';
+    content.style.overflowY = 'auto';
+    content.style.position = 'relative';
+    
+    // Close button
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '&times;';
+    closeButton.style.position = 'absolute';
+    closeButton.style.top = '10px';
+    closeButton.style.right = '10px';
+    closeButton.style.border = 'none';
+    closeButton.style.background = 'none';
+    closeButton.style.fontSize = '24px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.onclick = () => document.body.removeChild(popup);
+    
+    // Title
+    const title = document.createElement('h3');
+    title.textContent = `${saleType} Sales`;
+    title.style.color = 'var(--primary-color)';
+    title.style.marginTop = '0';
+    title.style.marginBottom = '20px';
+    
+    // Stats container
+    const statsContainer = document.createElement('div');
+    statsContainer.style.display = 'flex';
+    statsContainer.style.flexWrap = 'wrap';
+    statsContainer.style.gap = '15px';
+    statsContainer.style.marginBottom = '20px';
+    
+    // Stats: Revenue
+    const revenueStat = document.createElement('div');
+    revenueStat.style.flex = '1';
+    revenueStat.style.backgroundColor = 'var(--light-bg)';
+    revenueStat.style.padding = '15px';
+    revenueStat.style.borderRadius = '8px';
+    revenueStat.style.textAlign = 'center';
+    revenueStat.style.minWidth = '150px';
+    
+    const revenueLabel = document.createElement('div');
+    revenueLabel.textContent = 'Total Revenue';
+    revenueLabel.style.fontSize = '0.9rem';
+    revenueLabel.style.color = 'var(--grey-dark)';
+    revenueLabel.style.marginBottom = '5px';
+    
+    const revenueValue = document.createElement('div');
+    revenueValue.textContent = formatCurrency(revenue);
+    revenueValue.style.fontSize = '1.8rem';
+    revenueValue.style.fontWeight = 'bold';
+    revenueValue.style.color = 'var(--primary-color)';
+    
+    revenueStat.appendChild(revenueLabel);
+    revenueStat.appendChild(revenueValue);
+    
+    // Stats: Percentage
+    const percentStat = document.createElement('div');
+    percentStat.style.flex = '1';
+    percentStat.style.backgroundColor = 'var(--light-bg)';
+    percentStat.style.padding = '15px';
+    percentStat.style.borderRadius = '8px';
+    percentStat.style.textAlign = 'center';
+    percentStat.style.minWidth = '150px';
+    
+    const percentLabel = document.createElement('div');
+    percentLabel.textContent = 'Percentage of Sales';
+    percentLabel.style.fontSize = '0.9rem';
+    percentLabel.style.color = 'var(--grey-dark)';
+    percentLabel.style.marginBottom = '5px';
+    
+    const percentValue = document.createElement('div');
+    percentValue.textContent = percentage + '%';
+    percentValue.style.fontSize = '1.8rem';
+    percentValue.style.fontWeight = 'bold';
+    percentValue.style.color = percentage > 40 ? 'var(--success)' : percentage > 20 ? 'var(--primary-light)' : 'var(--secondary-color)';
+    
+    percentStat.appendChild(percentLabel);
+    percentStat.appendChild(percentValue);
+    
+    // Find relevant tickets for this sale type
+    const tickets = ticketData.filter(ticket => ticket.saleType === saleType).slice(0, 20);
+    
+    // Stats: Ticket Count
+    const countStat = document.createElement('div');
+    countStat.style.flex = '1';
+    countStat.style.backgroundColor = 'var(--light-bg)';
+    countStat.style.padding = '15px';
+    countStat.style.borderRadius = '8px';
+    countStat.style.textAlign = 'center';
+    countStat.style.minWidth = '150px';
+    
+    const countLabel = document.createElement('div');
+    countLabel.textContent = 'Ticket Count';
+    countLabel.style.fontSize = '0.9rem';
+    countLabel.style.color = 'var(--grey-dark)';
+    countLabel.style.marginBottom = '5px';
+    
+    const countValue = document.createElement('div');
+    countValue.textContent = tickets.length;
+    countValue.style.fontSize = '1.8rem';
+    countValue.style.fontWeight = 'bold';
+    countValue.style.color = 'var(--primary-color)';
+    
+    countStat.appendChild(countLabel);
+    countStat.appendChild(countValue);
+    
+    statsContainer.appendChild(revenueStat);
+    statsContainer.appendChild(percentStat);
+    statsContainer.appendChild(countStat);
+    
+    // Ticket table
+    const tableTitle = document.createElement('h4');
+    tableTitle.textContent = 'Ticket Details';
+    tableTitle.style.marginTop = '20px';
+    tableTitle.style.marginBottom = '10px';
+    
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    
+    // Table header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    ['Concert', 'Price', 'Profit', 'Margin'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        th.style.textAlign = 'left';
+        th.style.padding = '8px';
+        th.style.borderBottom = '1px solid var(--grey-light)';
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    
+    // Table body
+    const tbody = document.createElement('tbody');
+    if (tickets.length > 0) {
+        tickets.forEach(ticket => {
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid var(--grey-light)';
+            
+            // Concert column
+            const concertCell = document.createElement('td');
+            concertCell.textContent = ticket.concert || '-';
+            concertCell.style.padding = '8px';
+            row.appendChild(concertCell);
+            
+            // Price column
+            const priceCell = document.createElement('td');
+            priceCell.textContent = typeof ticket.salePrice === 'string' ? ticket.salePrice : '$' + (ticket.salePrice || 0).toLocaleString();
+            priceCell.style.padding = '8px';
+            row.appendChild(priceCell);
+            
+            // Profit column
+            const profitCell = document.createElement('td');
+            profitCell.textContent = typeof ticket.profit === 'string' ? ticket.profit : '$' + (ticket.profit || 0).toLocaleString();
+            profitCell.style.padding = '8px';
+            row.appendChild(profitCell);
+            
+            // Margin column
+            const marginCell = document.createElement('td');
+            marginCell.textContent = ticket.profitPercentage;
+            marginCell.style.padding = '8px';
+            marginCell.style.fontWeight = 'bold';
+            marginCell.style.color = parseFloat(ticket.profitPercentage) > 50 ? 'var(--success)' : 'var(--secondary-color)';
+            row.appendChild(marginCell);
+            
+            tbody.appendChild(row);
+        });
+    } else {
+        const emptyRow = document.createElement('tr');
+        const emptyCell = document.createElement('td');
+        emptyCell.colSpan = 4;
+        emptyCell.textContent = 'No ticket data available';
+        emptyCell.style.textAlign = 'center';
+        emptyCell.style.padding = '20px';
+        emptyRow.appendChild(emptyCell);
+        tbody.appendChild(emptyRow);
+    }
+    table.appendChild(tbody);
+    
+    // Add everything to the popup
+    content.appendChild(closeButton);
+    content.appendChild(title);
+    content.appendChild(statsContainer);
+    content.appendChild(tableTitle);
+    content.appendChild(table);
+    popup.appendChild(content);
+    
+    // Add to the body and show
+    document.body.appendChild(popup);
+    
+    // Close when clicking outside
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) {
+            document.body.removeChild(popup);
+        }
+    });
+}
+
 // Format percentage values
 function formatPercentage(value) {
     return new Intl.NumberFormat('en-US', {
@@ -1516,7 +1933,28 @@ function initializeCharts() {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Profit Margin: ${context.raw.toFixed(1)}%`;
+                                },
+                                afterLabel: function(context) {
+                                    return `Click for ticket details`;
+                                }
+                            }
+                        }
+                    },
+                    onClick: function(event, elements) {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const concert = this.data.labels[index];
+                            const profitMargin = this.data.datasets[0].data[index];
+                            
+                            showConcertPopup(concert, profitMargin);
+                        }
+                    }
                 }
             });
         }
@@ -1548,7 +1986,33 @@ function initializeCharts() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${context.label}: $${value.toLocaleString()} (${percentage}%)`;
+                            },
+                            afterLabel: function(context) {
+                                return `Click for ticket details`;
+                            }
+                        }
+                    }
+                },
+                onClick: function(event, elements) {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const saleType = this.data.labels[index];
+                        const revenue = this.data.datasets[0].data[index];
+                        const total = this.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
+                        const percentage = Math.round((revenue / total) * 100);
+                        
+                        showSaleTypePopup(saleType, revenue, percentage);
+                    }
+                }
             }
         });
     }
