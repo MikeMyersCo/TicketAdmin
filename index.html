@@ -576,7 +576,21 @@
             }
             
             .kpi-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(1, 1fr) !important;
+                display: grid;
+                justify-content: center;
+                gap: 15px;
+            }
+            
+            .kpi-card {
+                margin: 0;
+                min-width: unset !important;
+                width: 100%;
+            }
+            
+            /* Override the grid-column on mobile */
+            .kpi-card[style*="grid-column"] {
+                grid-column: auto !important;
             }
 
             h1 {
@@ -686,7 +700,12 @@
         /* For very small screens */
         @media (max-width: 500px) {
             .kpi-grid {
-                grid-template-columns: 1fr;
+                gap: 12px;
+                padding: 0 5px;
+            }
+            
+            .kpi-card {
+                max-width: 100%;
             }
             
             h1 {
@@ -818,7 +837,8 @@
         </div>
 
         <!-- Key Performance Indicators Row -->
-        <div class="kpi-grid" style="justify-content: center; max-width: 900px; margin: 0 auto 30px auto;">
+        <!-- First row of KPI cards -->
+        <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 900px; margin: 0 auto 20px auto;">
             <div class="kpi-card">
                 <div class="kpi-icon">
                     <i class="fas fa-dollar-sign"></i>
@@ -843,6 +863,18 @@
 
             <div class="kpi-card">
                 <div class="kpi-icon">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div class="kpi-title">TOP SALE TYPE</div>
+                <div class="kpi-value" id="top-sale-type">-</div>
+                <div class="kpi-trend" id="sale-type-percent">0%</div>
+            </div>
+        </div>
+        
+        <!-- Second row of KPI cards -->
+        <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 900px; margin: 0 auto 30px auto;">
+            <div class="kpi-card">
+                <div class="kpi-icon">
                     <i class="fas fa-ticket-alt"></i>
                 </div>
                 <div class="kpi-title">TICKETS SOLD</div>
@@ -852,13 +884,15 @@
                 </div>
             </div>
 
-            <div class="kpi-card">
+            <div class="kpi-card" style="grid-column: 3;">
                 <div class="kpi-icon">
-                    <i class="fas fa-chart-pie"></i>
+                    <i class="fas fa-clipboard-list"></i>
                 </div>
-                <div class="kpi-title">TOP SALE TYPE</div>
-                <div class="kpi-value" id="top-sale-type">-</div>
-                <div class="kpi-trend" id="sale-type-percent">0%</div>
+                <div class="kpi-title">TOTAL TICKETS</div>
+                <div class="kpi-value" id="total-tickets">0</div>
+                <div class="kpi-trend positive" id="total-tickets-trend">
+                    <i class="fas fa-arrow-up"></i> 0%
+                </div>
             </div>
         </div>
 
