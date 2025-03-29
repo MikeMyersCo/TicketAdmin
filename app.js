@@ -150,12 +150,14 @@ function updateKPIs(data, previousPeriodData) {
             document.getElementById('top-sale-type').textContent = "Direct";
             document.getElementById('sale-type-percent').textContent = "60.0%";
             document.getElementById('total-tickets').textContent = "10";
+            document.getElementById('total-concerts').textContent = "3";
             
             // Set positive trend indicators
             updateTrendIndicator('revenue-trend', 15);
             updateTrendIndicator('margin-trend', 8);
             updateTrendIndicator('tickets-trend', 20);
             updateTrendIndicator('total-tickets-trend', 5);
+            updateTrendIndicator('total-concerts-trend', 10);
             return;
         }
         
@@ -197,6 +199,18 @@ function updateKPIs(data, previousPeriodData) {
         // Count total tickets in the spreadsheet (with a fallback if ticketData is undefined)
         const totalTickets = Array.isArray(ticketData) ? ticketData.length : 0;
         console.log("Total tickets in spreadsheet:", totalTickets);
+        
+        // Count total number of distinct concerts
+        const distinctConcerts = new Set();
+        if (Array.isArray(ticketData)) {
+            ticketData.forEach(ticket => {
+                if (ticket.concert) {
+                    distinctConcerts.add(ticket.concert);
+                }
+            });
+        }
+        const totalConcerts = distinctConcerts.size;
+        console.log("Total distinct concerts:", totalConcerts);
         
         // Find top sale type
         const saleTypeCounts = {};
@@ -273,6 +287,27 @@ function updateKPIs(data, previousPeriodData) {
             totalTicketsTrend = 8;
         }
         
+        // Calculate trend for total concerts
+        let totalConcertsTrend = 0;
+        // Create a set of previous concerts for comparison
+        const prevDistinctConcerts = new Set();
+        if (Array.isArray(previousPeriodData) && previousPeriodData.length > 0) {
+            previousPeriodData.forEach(ticket => {
+                if (ticket.concert) {
+                    prevDistinctConcerts.add(ticket.concert);
+                }
+            });
+            
+            const prevTotalConcerts = prevDistinctConcerts.size;
+            if (prevTotalConcerts > 0) {
+                totalConcertsTrend = ((totalConcerts - prevTotalConcerts) / prevTotalConcerts) * 100;
+            } else {
+                totalConcertsTrend = 5; // Default positive trend
+            }
+        } else {
+            totalConcertsTrend = 5; // Default positive trend if no previous data
+        }
+        
         // Update the KPI elements
         document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
         document.getElementById('avg-profit-margin').textContent = avgMargin.toFixed(1) + '%';
@@ -280,12 +315,14 @@ function updateKPIs(data, previousPeriodData) {
         document.getElementById('top-sale-type').textContent = topSaleType;
         document.getElementById('sale-type-percent').textContent = saleTypePercentage.toFixed(1) + '%';
         document.getElementById('total-tickets').textContent = totalTickets;
+        document.getElementById('total-concerts').textContent = totalConcerts;
         
         // Update trend indicators
         updateTrendIndicator('revenue-trend', revenueTrend);
         updateTrendIndicator('margin-trend', marginTrend);
         updateTrendIndicator('tickets-trend', ticketsTrend);
         updateTrendIndicator('total-tickets-trend', totalTicketsTrend);
+        updateTrendIndicator('total-concerts-trend', totalConcertsTrend);
     } catch (error) {
         console.error("Error updating KPIs:", error);
         
@@ -296,12 +333,14 @@ function updateKPIs(data, previousPeriodData) {
         document.getElementById('top-sale-type').textContent = "Direct";
         document.getElementById('sale-type-percent').textContent = "60.0%";
         document.getElementById('total-tickets').textContent = "10";
+        document.getElementById('total-concerts').textContent = "3";
         
         // Set positive trend indicators
         updateTrendIndicator('revenue-trend', 15);
         updateTrendIndicator('margin-trend', 8);
         updateTrendIndicator('tickets-trend', 20);
         updateTrendIndicator('total-tickets-trend', 5);
+        updateTrendIndicator('total-concerts-trend', 10);
     }
 }
 
