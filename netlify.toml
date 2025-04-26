@@ -3,10 +3,14 @@
   # Publish directory (where the final, built files will be placed)
   publish = "."
   
-  # Generate users.txt file from environment variable
-  command = "echo $NETLIFY_AUTH_USERS > users.txt"
+  # Generate users.txt file from environment variable and process template variables
+  command = """
+    echo $NETLIFY_AUTH_USERS > users.txt && 
+    sed -i "s/{{ GOOGLE_API_KEY }}/$GOOGLE_API_KEY/g" index.html && 
+    sed -i "s/{{ SPREADSHEET_ID }}/$SPREADSHEET_ID/g" index.html
+  """
 
-# Production environment variables
+# Production environment variables  
 [context.production]
   environment = { NODE_VERSION = "16" }
 

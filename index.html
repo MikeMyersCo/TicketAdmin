@@ -1109,9 +1109,10 @@
         // Create a default ENV if none exists
         if (!window.ENV) {
             console.log('Creating default ENV object');
+            // In Netlify, these placeholders will be replaced with actual environment variables
             window.ENV = {
-                GOOGLE_API_KEY: 'YOUR_API_KEY_HERE',
-                SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID_HERE'
+                GOOGLE_API_KEY: '{{ GOOGLE_API_KEY }}',
+                SPREADSHEET_ID: '{{ SPREADSHEET_ID }}'
             };
         }
     </script>
