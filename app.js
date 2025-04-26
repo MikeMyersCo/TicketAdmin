@@ -167,7 +167,20 @@ function updateKPIs(data, previousPeriodData) {
         // Calculate total revenue
         let totalRevenue = 0;
         data.forEach(ticket => {
-            const salePrice = parseCurrency(ticket.salePrice);
+            console.log(`Raw sale price for ${ticket.concert}:`, ticket.salePrice);
+            
+            // For blank sale prices, use $50 as default
+            let salePrice;
+            // Check for empty cells, undefined, null, empty strings, or blank strings
+            if (ticket.salePrice === undefined || ticket.salePrice === null || 
+                ticket.salePrice === '' || 
+                (typeof ticket.salePrice === 'string' && ticket.salePrice.trim() === '') ||
+                (Object.prototype.hasOwnProperty.call(ticket, 'salePrice') && ticket.salePrice === '')) {
+                salePrice = 50; // Default $50 for blank sale price
+                console.log(`Blank sale price for ${ticket.concert} - using default $50`);
+            } else {
+                salePrice = parseCurrency(ticket.salePrice);
+            }
             console.log(`Sale price for ${ticket.concert}: ${ticket.salePrice} parsed as ${salePrice}`);
             totalRevenue += salePrice;
         });
@@ -561,7 +574,20 @@ function updateTopConcertsChart(data) {
             // Sum revenue by concert
             data.forEach(ticket => {
                 const concert = ticket.concert || 'Unknown';
-                const salePrice = parseCurrency(ticket.salePrice);
+                console.log(`Revenue calc for ${concert}, raw sale price:`, ticket.salePrice);
+                
+                // For blank sale prices, use $50 as default
+                let salePrice;
+                // Check for empty cells, undefined, null, empty strings, or blank strings
+                if (ticket.salePrice === undefined || ticket.salePrice === null || 
+                    ticket.salePrice === '' || 
+                    (typeof ticket.salePrice === 'string' && ticket.salePrice.trim() === '') ||
+                    !Object.prototype.hasOwnProperty.call(ticket, 'salePrice')) {
+                    salePrice = 50; // Default $50 for blank sale price
+                    console.log(`Blank sale price for ${concert} in top concerts - using default $50`);
+                } else {
+                    salePrice = parseCurrency(ticket.salePrice);
+                }
                 
                 if (!concertRevenue[concert]) {
                     concertRevenue[concert] = 0;
@@ -2072,7 +2098,7 @@ function calculateStubHubMetrics(data) {
 
 // Parse currency string to number
 function parseCurrency(currencyStr) {
-    if (!currencyStr) return 0;
+    if (!currencyStr || currencyStr === '') return 50; // Default to $50 when sale price is blank
     
     console.log("Parsing currency:", currencyStr);
     
@@ -2082,8 +2108,11 @@ function parseCurrency(currencyStr) {
     if (typeof currencyStr === 'number') {
         value = currencyStr;
     } else if (typeof currencyStr === 'string') {
+        // Check for empty string or just whitespace
+        if (currencyStr.trim() === '') return 50;
+        
         // Remove $ sign, commas, and spaces
-        value = parseFloat(currencyStr.replace(/[$,\s]/g, '')) || 0;
+        value = parseFloat(currencyStr.replace(/[$,\s]/g, '')) || 50; // Use $50 default if parsing results in 0 or NaN
         console.log("Parsed as:", value);
     }
     
@@ -2146,6 +2175,206 @@ function debugTicketData() {
 }
 
 // Initialize the application
+// Function to show concerts list in a popup
+function showConcertsList(event) {
+    // Stop event propagation to prevent issues in Safari
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    console.log("Showing concerts list");
+    
+    // Get all distinct concerts and their dates
+    const concertMap = new Map();
+    if (Array.isArray(ticketData)) {
+        ticketData.forEach(ticket => {
+            if (ticket.concert && ticket.concertDate) {
+                concertMap.set(ticket.concert, ticket.concertDate);
+            }
+        });
+    }
+    
+    // Convert to array format [concert, date]
+    let concertsWithDates = Array.from(concertMap).map(([concert, date]) => {
+        return { name: concert, date: date };
+    });
+    
+    // Sort by date (ascending)
+    concertsWithDates.sort((a, b) => {
+        // Handle null or undefined dates
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        
+        return a.date - b.date;
+    });
+    
+    // Create popup
+    const popup = document.createElement('div');
+    popup.className = 'popup-overlay';
+    popup.style.position = 'fixed';
+    popup.style.top = '0';
+    popup.style.left = '0';
+    popup.style.width = '100%';
+    popup.style.height = '100%';
+    popup.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    popup.style.display = 'flex';
+    popup.style.justifyContent = 'center';
+    popup.style.alignItems = 'center';
+    popup.style.zIndex = '1000';
+    
+    // Create popup content
+    const content = document.createElement('div');
+    content.className = 'popup-content';
+    content.style.backgroundColor = 'white';
+    content.style.borderRadius = '8px';
+    content.style.padding = '20px';
+    content.style.width = '90%';
+    content.style.maxWidth = '600px';
+    content.style.maxHeight = '80vh';
+    content.style.overflowY = 'auto';
+    content.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.2)';
+    
+    // Create header
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.marginBottom = '15px';
+    header.style.padding = '0 0 15px 0';
+    header.style.borderBottom = '1px solid #e9ecef';
+    
+    const title = document.createElement('h2');
+    title.textContent = 'All Concerts';
+    title.style.margin = '0';
+    title.style.color = 'var(--primary-color)';
+    
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '&times;';
+    closeButton.style.backgroundColor = 'transparent';
+    closeButton.style.border = 'none';
+    closeButton.style.fontSize = '24px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.color = 'var(--grey-dark)';
+    closeButton.onclick = () => document.body.removeChild(popup);
+    
+    header.appendChild(title);
+    header.appendChild(closeButton);
+    content.appendChild(header);
+    
+    // Create table container
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.marginBottom = '20px';
+    
+    // Add table header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    headerRow.style.backgroundColor = 'var(--primary-light)';
+    headerRow.style.color = 'white';
+    
+    const dateHeader = document.createElement('th');
+    dateHeader.textContent = 'Date';
+    dateHeader.style.padding = '10px 15px';
+    dateHeader.style.textAlign = 'left';
+    dateHeader.style.width = '40%';
+    
+    const concertHeader = document.createElement('th');
+    concertHeader.textContent = 'Concert';
+    concertHeader.style.padding = '10px 15px';
+    concertHeader.style.textAlign = 'left';
+    
+    headerRow.appendChild(dateHeader);
+    headerRow.appendChild(concertHeader);
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    
+    // Add table body
+    const tbody = document.createElement('tbody');
+    
+    // Alternating row colors
+    let rowIndex = 0;
+    
+    // Add each concert as a row
+    concertsWithDates.forEach(concert => {
+        const row = document.createElement('tr');
+        row.style.backgroundColor = rowIndex % 2 === 0 ? 'white' : 'var(--grey-light)';
+        
+        const dateCell = document.createElement('td');
+        const dateStr = concert.date ? formatDate(concert.date) : 'Date not available';
+        dateCell.textContent = dateStr;
+        dateCell.style.padding = '12px 15px';
+        
+        const concertCell = document.createElement('td');
+        concertCell.textContent = concert.name;
+        concertCell.style.padding = '12px 15px';
+        concertCell.style.fontWeight = '500';
+        
+        row.appendChild(dateCell);
+        row.appendChild(concertCell);
+        tbody.appendChild(row);
+        
+        rowIndex++;
+    });
+    
+    table.appendChild(tbody);
+    content.appendChild(table);
+    
+    // Add a close button at the bottom
+    const closeButtonContainer = document.createElement('div');
+    closeButtonContainer.style.textAlign = 'center';
+    closeButtonContainer.style.marginTop = '15px';
+    
+    const bottomCloseButton = document.createElement('button');
+    bottomCloseButton.textContent = 'Close';
+    bottomCloseButton.style.backgroundColor = 'var(--primary-color)';
+    bottomCloseButton.style.color = 'white';
+    bottomCloseButton.style.border = 'none';
+    bottomCloseButton.style.borderRadius = '4px';
+    bottomCloseButton.style.padding = '8px 16px';
+    bottomCloseButton.style.fontSize = '14px';
+    bottomCloseButton.style.cursor = 'pointer';
+    bottomCloseButton.onclick = () => document.body.removeChild(popup);
+    
+    closeButtonContainer.appendChild(bottomCloseButton);
+    content.appendChild(closeButtonContainer);
+    
+    popup.appendChild(content);
+    
+    // Close when clicking outside content
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) {
+            document.body.removeChild(popup);
+        }
+    });
+    
+    document.body.appendChild(popup);
+}
+
+// Helper function to format dates
+function formatDate(date) {
+    if (!date) return 'Unknown';
+    
+    try {
+        // Make sure date is a Date object
+        const dateObj = date instanceof Date ? date : new Date(date);
+        
+        // Check if date is valid
+        if (isNaN(dateObj.getTime())) return 'Invalid date';
+        
+        // Format as MM/DD/YYYY
+        const month = dateObj.getMonth() + 1; // getMonth() is zero-based
+        const day = dateObj.getDate();
+        const year = dateObj.getFullYear();
+        
+        return `${month}/${day}/${year}`;
+    } catch (error) {
+        console.error("Error formatting date:", error);
+        return 'Error';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM content loaded");
     
@@ -2160,6 +2389,44 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTrendIndicator('revenue-trend', 15);
     updateTrendIndicator('margin-trend', 8);
     updateTrendIndicator('tickets-trend', 20);
+    
+    // Add click event to Total Concerts KPI card
+    const totalConcertsCard = document.getElementById('total-concerts-card');
+    if (totalConcertsCard) {
+        console.log("Found Total Concerts card by ID, adding click handler");
+        totalConcertsCard.style.cursor = 'pointer';
+        
+        // Try to use both click and touchend for better cross-browser compatibility
+        totalConcertsCard.addEventListener('click', function(e) {
+            console.log("Total Concerts card clicked");
+            showConcertsList(e);
+        });
+        
+        totalConcertsCard.addEventListener('touchend', function(e) {
+            console.log("Total Concerts card touch ended");
+            showConcertsList(e);
+        });
+    } else {
+        console.warn("Could not find Total Concerts card by ID");
+        
+        // Fallback approach for older browsers
+        const totalConcertsElement = document.getElementById('total-concerts');
+        if (totalConcertsElement) {
+            const parentCard = totalConcertsElement.closest('.kpi-card');
+            if (parentCard) {
+                console.log("Found Total Concerts card via parent traversal, adding click handler");
+                parentCard.style.cursor = 'pointer';
+                parentCard.addEventListener('click', function(e) {
+                    console.log("Total Concerts parent card clicked");
+                    showConcertsList(e);
+                });
+                parentCard.addEventListener('touchend', function(e) {
+                    console.log("Total Concerts parent card touch ended");
+                    showConcertsList(e);
+                });
+            }
+        }
+    }
     
     // Check if Chart.js is loaded
     if (typeof Chart === 'undefined') {
@@ -2800,6 +3067,11 @@ async function fetchSheetData() {
                     }
                 }
                 
+                // Use default sale price of $50 for blank fields
+                const processedSalePrice = (!salePrice || salePrice === '') ? 50 : salePrice;
+                
+                console.log(`Ticket for ${concert} seat ${seat}: Raw sale price=${salePrice}, Processed=${processedSalePrice}`);
+                
                 return {
                     concert: concert,
                     date: date,
@@ -2807,7 +3079,7 @@ async function fetchSheetData() {
                     seat: seat,
                     listPrice: listPrice,
                     saleType: saleType,
-                    salePrice: salePrice,
+                    salePrice: processedSalePrice, // Use $50 as default for blank sale prices
                     dateSold: dateSold,
                     soldDate: soldDate,
                     cost: cost,
