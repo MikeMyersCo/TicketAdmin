@@ -1,6 +1,6 @@
 // Global variables for data and charts
 let ticketData = [];
-let profitChart, salesTypeChart, topConcertsChart, timelineChart, stubhubDaysChart;
+let profitChart, salesTypeChart, topConcertsChart, timelineChart, facebookDaysChart;
 
 // Chart color scheme
 const chartColors = {
@@ -115,8 +115,8 @@ function updateDashboard(skipCharts = false) {
     // Update KPI metrics
     updateKPIs(filteredData, previousPeriodData);
     
-    // Calculate StubHub comparison metrics
-    calculateStubHubMetrics(filteredData);
+    // Calculate Facebook comparison metrics
+    calculateFacebookMetrics(filteredData);
         
     // Update charts (unless skipCharts is true)
     if (!skipCharts) {
@@ -124,9 +124,9 @@ function updateDashboard(skipCharts = false) {
         updateSalesByTypeChart(filteredData);
         updateTopConcertsChart(filteredData);
         
-        // Update the StubHub panels
-        updateRecentStubHubSales(filteredData);
-        updateStubHubSalesByDay(filteredData);
+        // Update the Facebook panels
+        updateRecentFacebookSales(filteredData);
+        updateFacebookSalesByDay(filteredData);
         
         // Removed updateProfitTimelineChart(filteredData); - timeline chart no longer needed
     }
@@ -638,15 +638,15 @@ function updateTopConcertsChart(data) {
 }
 
 
-// Update Recent StubHub Sales Table
-function updateRecentStubHubSales(data) {
-    console.log("Updating recent StubHub sales with", data.length, "items");
+// Update Recent Facebook Sales Table
+function updateRecentFacebookSales(data) {
+    console.log("Updating recent Facebook sales with", data.length, "items");
     
     try {
         // Get the table body element
-        const tableBody = document.getElementById('stubhub-sales-body');
-        const noDataElem = document.getElementById('stubhub-sales-no-data');
-        const loaderElem = document.getElementById('stubhub-sales-loader');
+        const tableBody = document.getElementById('facebook-sales-body');
+        const noDataElem = document.getElementById('facebook-sales-no-data');
+        const loaderElem = document.getElementById('facebook-sales-loader');
         
         // Initially clear and show loading
         if (tableBody) {
@@ -668,29 +668,29 @@ function updateRecentStubHubSales(data) {
             console.log("Unique sale types in filtered data:", Array.from(saleTypes));
             
             // Log counts of different ticket types
-            const stubhubExact = data.filter(ticket => ticket.saleType === 'Stubhub').length;
-            const anyHub = data.filter(ticket => ticket.saleType && ticket.saleType.toLowerCase().includes('hub')).length;
-            console.log("Exact 'Stubhub' count:", stubhubExact);
-            console.log("Contains 'hub' count:", anyHub);
+            const facebookExact = data.filter(ticket => ticket.saleType === 'Facebook').length;
+            const anyFB = data.filter(ticket => ticket.saleType && ticket.saleType.toLowerCase().includes('facebook')).length;
+            console.log("Exact 'Facebook' count:", facebookExact);
+            console.log("Contains 'facebook' count:", anyFB);
             
-            // Filter for StubHub tickets - with correct capitalization
-            const stubHubSales = data.filter(ticket => 
-                // Use the isStubHub flag or direct detection for either capitalization
-                ticket.isStubHub || 
-                ticket.saleType === 'StubHub' ||  // Capital H as in spreadsheet
-                ticket.saleType === 'Stubhub' ||  // Lowercase h as fallback
+            // Filter for Facebook tickets - with correct capitalization
+            const facebookSales = data.filter(ticket => 
+                // Use the isFacebook flag or direct detection for either capitalization
+                ticket.isFacebook || 
+                ticket.saleType === 'Facebook' ||  // Capital F as in spreadsheet
+                ticket.saleType === 'facebook' ||  // Lowercase f as fallback
                 // Fallback to pattern matching if needed
-                (ticket.saleType && ticket.saleType.toLowerCase() === 'stubhub')
+                (ticket.saleType && ticket.saleType.toLowerCase() === 'facebook')
             );
             
-            console.log("StubHub/resale sales found:", stubHubSales.length);
+            console.log("Facebook sales found:", facebookSales.length);
             
-            if (stubHubSales.length > 0) {
+            if (facebookSales.length > 0) {
                 // Sort by date (most recent first)
-                stubHubSales.sort((a, b) => (b.soldDate || 0) - (a.soldDate || 0));
+                facebookSales.sort((a, b) => (b.soldDate || 0) - (a.soldDate || 0));
                 
                 // Take only the 5 most recent
-                const recentSales = stubHubSales.slice(0, 5);
+                const recentSales = facebookSales.slice(0, 5);
                 
                 console.log("Recent resale platform sales (top 5):", recentSales);
                 
@@ -831,25 +831,25 @@ function updateRecentStubHubSales(data) {
         }
         
     } catch (error) {
-        console.error("Error updating StubHub sales table:", error);
+        console.error("Error updating Facebook sales table:", error);
         // Show no-data message in case of error
-        const noDataElem = document.getElementById('stubhub-sales-no-data');
+        const noDataElem = document.getElementById('facebook-sales-no-data');
         if (noDataElem) {
             noDataElem.style.display = 'block';
         }
     }
 }
 
-// Update StubHub Sales by Day of Week Chart
-function updateStubHubSalesByDay(data) {
-    console.log("Updating StubHub sales by day chart with", data.length, "items");
+// Update Facebook Sales by Day of Week Chart
+function updateFacebookSalesByDay(data) {
+    console.log("Updating Facebook sales by day chart with", data.length, "items");
     
     // Initialize chart if needed
-    if (!stubhubDaysChart) {
-        console.log("stubhubDaysChart not found, initializing");
-        const stubhubDaysCtx = document.getElementById('stubhub-days-chart');
-        if (stubhubDaysCtx) {
-            stubhubDaysChart = new Chart(stubhubDaysCtx, {
+    if (!facebookDaysChart) {
+        console.log("facebookDaysChart not found, initializing");
+        const facebookDaysCtx = document.getElementById('facebook-days-chart');
+        if (facebookDaysCtx) {
+            facebookDaysChart = new Chart(facebookDaysCtx, {
                 type: 'bar',
                 data: {
                     labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -888,31 +888,31 @@ function updateStubHubSalesByDay(data) {
                 }
             });
         } else {
-            console.error("Cannot find stubhub-days-chart element");
+            console.error("Cannot find facebook-days-chart element");
             return;
         }
     }
     
     try {
-        const noDataElem = document.getElementById('stubhub-days-no-data');
-        const loaderElem = document.getElementById('stubhub-days-loader');
+        const noDataElem = document.getElementById('facebook-days-no-data');
+        const loaderElem = document.getElementById('facebook-days-loader');
         
         // Process real data
         if (data.length > 0) {
-            // Log the number of StubHub tickets in the data
-            const stubhubCount = data.filter(ticket => ticket.isStubHub).length;
-            console.log(`StubHub tickets (by flag) in filtered data: ${stubhubCount}`);
+            // Log the number of Facebook tickets in the data
+            const facebookCount = data.filter(ticket => ticket.isFacebook).length;
+            console.log(`Facebook tickets (by flag) in filtered data: ${facebookCount}`);
             
             // Use simplified approach with fallbacks
-            const stubHubSales = data.filter(ticket => {
+            const facebookSales = data.filter(ticket => {
                 // Use flag or direct detection
-                const isStubHub = ticket.isStubHub || ticket.saleType === 'StubHub' || ticket.saleType === 'Stubhub';
+                const isFacebook = ticket.isFacebook || ticket.saleType === 'Facebook' || ticket.saleType === 'facebook';
                 
                 // Need date for day-of-week analysis
                 const hasSoldDate = ticket.soldDate != null;
                 
-                // If missing sold date but has isSold flag and is StubHub, generate a fake date
-                if (isStubHub && !hasSoldDate && ticket.isSold) {
+                // If missing sold date but has isSold flag and is Facebook, generate a fake date
+                if (isFacebook && !hasSoldDate && ticket.isSold) {
                     // Create a recent date for display purposes
                     const today = new Date();
                     const daysAgo = Math.floor(Math.random() * 5) + 1; // 1-5 days ago
@@ -920,16 +920,16 @@ function updateStubHubSalesByDay(data) {
                     return true;
                 }
                 
-                return isStubHub && hasSoldDate;
+                return isFacebook && hasSoldDate;
             });
             
-            console.log("StubHub/resale sales with dates:", stubHubSales.length);
+            console.log("Facebook sales with dates:", facebookSales.length);
             
-            if (stubHubSales.length > 0) {
+            if (facebookSales.length > 0) {
                 // Count sales by day of week (0 = Sunday, 6 = Saturday)
                 const dayCounts = [0, 0, 0, 0, 0, 0, 0];
                 
-                stubHubSales.forEach(ticket => {
+                facebookSales.forEach(ticket => {
                     if (ticket.soldDate) {
                         const dayOfWeek = ticket.soldDate.getDay(); // 0-6
                         dayCounts[dayOfWeek]++;
@@ -939,8 +939,8 @@ function updateStubHubSalesByDay(data) {
                 console.log("Sales by day of week:", dayCounts);
                 
                 // Update chart data
-                stubhubDaysChart.data.datasets[0].data = dayCounts;
-                stubhubDaysChart.update();
+                facebookDaysChart.data.datasets[0].data = dayCounts;
+                facebookDaysChart.update();
                 
                 // Hide no-data message
                 if (noDataElem) {
@@ -972,19 +972,19 @@ function updateStubHubSalesByDay(data) {
                 const sampleDayCounts = [3, 1, 0, 2, 1, 4, 5]; // Sun-Sat
                 
                 // Update chart with sample data
-                stubhubDaysChart.data.datasets[0].data = sampleDayCounts;
+                facebookDaysChart.data.datasets[0].data = sampleDayCounts;
                 
                 // Add sample data annotation
-                if (!stubhubDaysChart.options.plugins.annotation) {
-                    stubhubDaysChart.options.plugins.annotation = {};
+                if (!facebookDaysChart.options.plugins.annotation) {
+                    facebookDaysChart.options.plugins.annotation = {};
                 }
                 
                 // Add sample data label
-                if (!stubhubDaysChart.data.datasets[0].label.includes('Sample')) {
-                    stubhubDaysChart.data.datasets[0].label = 'Number of Sales (Sample Data)';
+                if (!facebookDaysChart.data.datasets[0].label.includes('Sample')) {
+                    facebookDaysChart.data.datasets[0].label = 'Number of Sales (Sample Data)';
                 }
                 
-                stubhubDaysChart.update();
+                facebookDaysChart.update();
                 
                 // Hide no-data message
                 if (noDataElem) {
@@ -1002,9 +1002,9 @@ function updateStubHubSalesByDay(data) {
         const sampleDayCounts = [3, 1, 0, 2, 1, 4, 5]; // Sun-Sat
         
         // Update chart with sample data
-        stubhubDaysChart.data.datasets[0].data = sampleDayCounts;
-        stubhubDaysChart.data.datasets[0].label = 'Number of Sales (Sample Data)';
-        stubhubDaysChart.update();
+        facebookDaysChart.data.datasets[0].data = sampleDayCounts;
+        facebookDaysChart.data.datasets[0].label = 'Number of Sales (Sample Data)';
+        facebookDaysChart.update();
         
         // Hide no-data message
         if (noDataElem) {
@@ -1012,21 +1012,21 @@ function updateStubHubSalesByDay(data) {
         }
         
     } catch (error) {
-        console.error("Error updating StubHub days chart:", error);
+        console.error("Error updating Facebook days chart:", error);
         
         // On error, still show sample data rather than error message
-        if (stubhubDaysChart) {
+        if (facebookDaysChart) {
             // Sample data - shows more sales on weekends
             const sampleDayCounts = [3, 1, 0, 2, 1, 4, 5]; // Sun-Sat
             
             // Update chart with sample data
-            stubhubDaysChart.data.datasets[0].data = sampleDayCounts;
-            stubhubDaysChart.data.datasets[0].label = 'Number of Sales (Sample Data)';
-            stubhubDaysChart.update();
+            facebookDaysChart.data.datasets[0].data = sampleDayCounts;
+            facebookDaysChart.data.datasets[0].label = 'Number of Sales (Sample Data)';
+            facebookDaysChart.update();
         }
         
         // Hide no-data message
-        const noDataElem = document.getElementById('stubhub-days-no-data');
+        const noDataElem = document.getElementById('facebook-days-no-data');
         if (noDataElem) {
             noDataElem.style.display = 'none';
         }
@@ -1977,56 +1977,56 @@ function debugSaleTypes() {
     console.log("==== END DEBUGGING ====");
 }
 
-// Calculate StubHub metrics compared to direct sales
-function calculateStubHubMetrics(data) {
+// Calculate Facebook metrics compared to direct sales
+function calculateFacebookMetrics(data) {
     try {
         // Log debugging info
-        console.log("Calculating StubHub metrics from", data.length, "tickets");
+        console.log("Calculating Facebook metrics from", data.length, "tickets");
         
         // Count different capitalization variants
-        const stubhubFlagged = data.filter(ticket => ticket.isStubHub).length;
-        const exactStubhubCapH = data.filter(ticket => ticket.saleType === 'StubHub').length;
-        const exactStubhubLowerH = data.filter(ticket => ticket.saleType === 'Stubhub').length;
+        const facebookFlagged = data.filter(ticket => ticket.isFacebook).length;
+        const exactFacebookCapF = data.filter(ticket => ticket.saleType === 'Facebook').length;
+        const exactFacebookLowerF = data.filter(ticket => ticket.saleType === 'facebook').length;
         
-        console.log(`Flagged as StubHub: ${stubhubFlagged}`);
-        console.log(`Exact 'StubHub' (capital H): ${exactStubhubCapH}`);
-        console.log(`Exact 'Stubhub' (lowercase h): ${exactStubhubLowerH}`);
+        console.log(`Flagged as Facebook: ${facebookFlagged}`);
+        console.log(`Exact 'Facebook' (capital F): ${exactFacebookCapF}`);
+        console.log(`Exact 'facebook' (lowercase f): ${exactFacebookLowerF}`);
         
-        // Find StubHub tickets using the isStubHub flag and fallbacks
-        const stubHubTickets = data.filter(ticket => 
+        // Find Facebook tickets using the isFacebook flag and fallbacks
+        const facebookTickets = data.filter(ticket => 
             // Use the flag if available
-            ticket.isStubHub || 
+            ticket.isFacebook || 
             // Exact match for both capitalizations as fallback
-            ticket.saleType === 'StubHub' || 
-            ticket.saleType === 'Stubhub' || 
+            ticket.saleType === 'Facebook' || 
+            ticket.saleType === 'facebook' || 
             // Case insensitive as last resort
-            (ticket.saleType && ticket.saleType.toLowerCase() === 'stubhub')
+            (ticket.saleType && ticket.saleType.toLowerCase() === 'facebook')
         );
         
-        // Find direct sales (anything that's not a StubHub ticket)
+        // Find direct sales (anything that's not a Facebook ticket)
         const directTickets = data.filter(ticket => {
-            // If it has the StubHub flag, it's not direct
-            if (ticket.isStubHub) return false;
+            // If it has the Facebook flag, it's not direct
+            if (ticket.isFacebook) return false;
             
-            // If it's explicitly labeled as StubHub with either capitalization, it's not direct
-            if (ticket.saleType === 'StubHub' || ticket.saleType === 'Stubhub') return false;
+            // If it's explicitly labeled as Facebook with either capitalization, it's not direct
+            if (ticket.saleType === 'Facebook' || ticket.saleType === 'facebook') return false;
             
             // If it doesn't even have a sale type, skip it
             if (!ticket.saleType) return false;
             
-            // It's a direct sale if it has a sale type not matching StubHub patterns
+            // It's a direct sale if it has a sale type not matching Facebook patterns
             return true;
         });
         
         // Calculate average prices
-        let stubHubAvgPrice = 0;
+        let facebookAvgPrice = 0;
         let directAvgPrice = 0;
         
-        if (stubHubTickets.length > 0) {
-            const stubHubTotalPrice = stubHubTickets.reduce((sum, ticket) => {
+        if (facebookTickets.length > 0) {
+            const facebookTotalPrice = facebookTickets.reduce((sum, ticket) => {
                 return sum + parseCurrency(ticket.salePrice);
             }, 0);
-            stubHubAvgPrice = stubHubTotalPrice / stubHubTickets.length;
+            facebookAvgPrice = facebookTotalPrice / facebookTickets.length;
         }
         
         if (directTickets.length > 0) {
@@ -2039,60 +2039,60 @@ function calculateStubHubMetrics(data) {
         // Calculate price difference percentage
         let priceDiffPercentage = 0;
         if (directAvgPrice > 0) {
-            priceDiffPercentage = ((stubHubAvgPrice - directAvgPrice) / directAvgPrice) * 100;
+            priceDiffPercentage = ((facebookAvgPrice - directAvgPrice) / directAvgPrice) * 100;
         }
         
         // Update DOM with the metrics if elements exist
-        const stubHubCountElem = document.getElementById('stubhub-sales-count');
-        const priceDiffElem = document.getElementById('stubhub-price-diff');
-        const avgPriceElem = document.getElementById('stubhub-avg-price');
+        const facebookCountElem = document.getElementById('facebook-sales-count');
+        const priceDiffElem = document.getElementById('facebook-price-diff');
+        const avgPriceElem = document.getElementById('facebook-avg-price');
         
-        if (stubHubCountElem) {
-            if (stubHubTickets.length > 0) {
-                stubHubCountElem.textContent = stubHubTickets.length;
+        if (facebookCountElem) {
+            if (facebookTickets.length > 0) {
+                facebookCountElem.textContent = facebookTickets.length;
             } else {
-                // No StubHub sales, use sample data
-                stubHubCountElem.textContent = "3";
-                stubHubCountElem.innerHTML += ' <span style="font-size: 0.7rem; color: var(--grey-dark);">(sample)</span>';
+                // No Facebook sales, use sample data
+                facebookCountElem.textContent = "3";
+                facebookCountElem.innerHTML += ' <span style="font-size: 0.7rem; color: var(--grey-dark);">(sample)</span>';
             }
         }
         
         if (avgPriceElem) {
-            if (stubHubAvgPrice > 0) {
-                avgPriceElem.textContent = formatCurrency(stubHubAvgPrice);
+            if (facebookAvgPrice > 0) {
+                avgPriceElem.textContent = formatCurrency(facebookAvgPrice);
             } else {
-                // No StubHub sales, use sample data
+                // No Facebook sales, use sample data
                 avgPriceElem.textContent = "$325";
                 avgPriceElem.innerHTML += ' <span style="font-size: 0.7rem; color: var(--grey-dark);">(sample)</span>';
             }
         }
         
         if (priceDiffElem) {
-            if (directAvgPrice > 0 && stubHubAvgPrice > 0) {
+            if (directAvgPrice > 0 && facebookAvgPrice > 0) {
                 // Format percentage with sign
                 const formattedPercentage = priceDiffPercentage.toFixed(1) + '%';
                 
                 // Determine if positive or negative
                 if (priceDiffPercentage > 0) {
                     priceDiffElem.innerHTML = `<span style="color:var(--success)">+${formattedPercentage}</span>`;
-                    priceDiffElem.title = `StubHub prices are ${formattedPercentage} higher than direct sales`;
+                    priceDiffElem.title = `Facebook prices are ${formattedPercentage} higher than direct sales`;
                 } else if (priceDiffPercentage < 0) {
                     priceDiffElem.innerHTML = `<span style="color:var(--danger)">${formattedPercentage}</span>`;
-                    priceDiffElem.title = `StubHub prices are ${Math.abs(priceDiffPercentage).toFixed(1)}% lower than direct sales`;
+                    priceDiffElem.title = `Facebook prices are ${Math.abs(priceDiffPercentage).toFixed(1)}% lower than direct sales`;
                 } else {
                     priceDiffElem.innerHTML = `<span>${formattedPercentage}</span>`;
-                    priceDiffElem.title = `StubHub prices are the same as direct sales`;
+                    priceDiffElem.title = `Facebook prices are the same as direct sales`;
                 }
             } else {
                 // No comparison data, use sample data
                 priceDiffElem.innerHTML = `<span style="color:var(--success)">+42.5%</span>`;
                 priceDiffElem.innerHTML += ' <span style="font-size: 0.7rem; color: var(--grey-dark);">(sample)</span>';
-                priceDiffElem.title = `Sample data: StubHub prices are typically 42.5% higher than direct sales`;
+                priceDiffElem.title = `Sample data: Facebook prices are typically 42.5% higher than direct sales`;
             }
         }
         
     } catch (error) {
-        console.error("Error calculating StubHub metrics:", error);
+        console.error("Error calculating Facebook metrics:", error);
     }
 }
 
@@ -2571,10 +2571,10 @@ function initializeCharts() {
             timelineChart.destroy();
             timelineChart = null;
         }
-        if (stubhubDaysChart) {
-            console.log('Destroying existing stubhubDaysChart');
-            stubhubDaysChart.destroy();
-            stubhubDaysChart = null;
+        if (facebookDaysChart) {
+            console.log('Destroying existing facebookDaysChart');
+            facebookDaysChart.destroy();
+            facebookDaysChart = null;
         }
     
         // Profit Percentage Chart
@@ -2810,18 +2810,18 @@ function initializeCharts() {
         console.warn('profit-timeline-chart element not found');
     }
     
-    // StubHub Sales by Day Chart
-    const stubhubDaysCtx = document.getElementById('stubhub-days-chart');
-    if (stubhubDaysCtx) {
-        console.log('Found stubhub-days-chart element');
+    // Facebook Sales by Day Chart
+    const facebookDaysCtx = document.getElementById('facebook-days-chart');
+    if (facebookDaysCtx) {
+        console.log('Found facebook-days-chart element');
         
         // Check if the canvas already has a chart
-        if (Chart.getChart(stubhubDaysCtx)) {
+        if (Chart.getChart(facebookDaysCtx)) {
             console.log('Chart already exists on this canvas, destroying it');
-            Chart.getChart(stubhubDaysCtx).destroy();
+            Chart.getChart(facebookDaysCtx).destroy();
         }
         
-        stubhubDaysChart = new Chart(stubhubDaysCtx, {
+        facebookDaysChart = new Chart(facebookDaysCtx, {
             type: 'bar',
             data: {
                 labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -2860,7 +2860,7 @@ function initializeCharts() {
             }
         });
     } else {
-        console.warn('stubhub-days-chart element not found');
+        console.warn('facebook-days-chart element not found');
     }
     } catch (error) {
         console.error('Error initializing charts:', error);
@@ -3086,10 +3086,10 @@ async function fetchSheetData() {
                     profitPercentage: profitPercentage,
                     profit: profit,
                     // Derived fields for analytics
-                    isSold: !!dateSold || (saleType === 'StubHub' || saleType === 'Stubhub'), // A ticket is sold if it has a date sold or is a StubHub ticket
+                    isSold: !!dateSold || (saleType === 'Facebook' || saleType === 'facebook'), // A ticket is sold if it has a date sold or is a Facebook ticket
                     year: concertDate ? concertDate.getFullYear() : null,
                     month: concertDate ? concertDate.getMonth() : null,
-                    isStubHub: saleType === 'StubHub' || saleType === 'Stubhub' // Flag for StubHub tickets
+                    isFacebook: saleType === 'Facebook' || saleType === 'facebook' // Flag for Facebook tickets
                 };
             }).filter(ticket => ticket !== null);
             
@@ -3183,7 +3183,7 @@ function loadSampleData() {
         },
         {
             concert: "Madonna", date: "06/10/2025", concertDate: new Date(2025, 5, 10),
-            seat: "C1", listPrice: "$250", saleType: "StubHub", salePrice: "$400",
+            seat: "C1", listPrice: "$250", saleType: "Facebook", salePrice: "$400",
             dateSold: "03/15/2025", soldDate: new Date(2025, 2, 15), cost: "$175",
             profitPercentage: "57%", profit: "$225", isSold: true, year: 2025, month: 5
         },
@@ -3237,10 +3237,10 @@ function showNoDataMessages() {
         spinner.classList.remove('active');
     });
     
-    // Clear the StubHub sales table
-    const stubhubSalesBody = document.getElementById('stubhub-sales-body');
-    if (stubhubSalesBody) {
-        stubhubSalesBody.innerHTML = '';
+    // Clear the Facebook sales table
+    const facebookSalesBody = document.getElementById('facebook-sales-body');
+    if (facebookSalesBody) {
+        facebookSalesBody.innerHTML = '';
     }
 }
 

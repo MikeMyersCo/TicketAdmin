@@ -675,18 +675,18 @@
                 font-size: 1.6rem;
             }
             
-            /* Style StubHub analytics for mobile */
-            #stubhub-sales-count, #stubhub-avg-price, #stubhub-price-diff {
+            /* Style Facebook analytics for mobile */
+            #facebook-sales-count, #facebook-avg-price, #facebook-price-diff {
                 font-size: 1.6rem !important;
                 word-break: break-word;
             }
             
-            /* Fix StubHub panel sizing for mobile */
+            /* Fix Facebook panel sizing for mobile */
             .dashboard-card-content {
                 padding-bottom: 10px; /* Create more space at bottom */
             }
             
-            /* Reduce margin between StubHub metrics for better fit */
+            /* Reduce margin between Facebook metrics for better fit */
             .dashboard-card-content > div > div > div {
                 margin-bottom: 15px !important; /* Reduce from 25px */
             }
@@ -726,21 +726,21 @@
                 height: 250px;
             }
             
-            /* Even smaller StubHub metrics for very small screens */
-            .stubhub-metrics-container {
+            /* Even smaller Facebook metrics for very small screens */
+            .facebook-metrics-container {
                 padding: 10px !important;
             }
             
-            .stubhub-metric {
+            .facebook-metric {
                 margin-bottom: 10px !important;
             }
             
-            .stubhub-metric > div:first-child {
+            .facebook-metric > div:first-child {
                 font-size: 0.8rem !important;
                 margin-bottom: 2px !important;
             }
             
-            #stubhub-sales-count, #stubhub-avg-price, #stubhub-price-diff {
+            #facebook-sales-count, #facebook-avg-price, #facebook-price-diff {
                 font-size: 1.4rem !important;
             }
         }
@@ -969,48 +969,48 @@
             </div>
 
 
-            <!-- StubHub Metrics -->
+            <!-- Facebook Metrics -->
             <div class="dashboard-card">
                 <div class="dashboard-card-header">
                     <div class="dashboard-card-title">
-                        <i class="fas fa-chart-bar"></i> StubHub Analytics
+                        <i class="fab fa-facebook"></i> Facebook Sales Analytics
                     </div>
                 </div>
                 <div class="dashboard-card-content">
-                    <div style="padding: 15px; display: flex; flex-direction: column; height: 100%; justify-content: space-between;" class="stubhub-metrics-container">
+                    <div style="padding: 15px; display: flex; flex-direction: column; height: 100%; justify-content: space-between;" class="facebook-metrics-container">
                         <div>
-                            <div style="margin-bottom: 25px;" class="stubhub-metric">
-                                <div style="font-size: 0.9rem; color: var(--grey-dark); margin-bottom: 5px;">Total Resale Tickets</div>
-                                <div style="font-size: 2.2rem; font-weight: bold; color: var(--primary-color);" id="stubhub-sales-count">0</div>
+                            <div style="margin-bottom: 25px;" class="facebook-metric">
+                                <div style="font-size: 0.9rem; color: var(--grey-dark); margin-bottom: 5px;">Total Facebook Tickets</div>
+                                <div style="font-size: 2.2rem; font-weight: bold; color: var(--primary-color);" id="facebook-sales-count">0</div>
                             </div>
                             
-                            <div style="margin-bottom: 25px;" class="stubhub-metric">
-                                <div style="font-size: 0.9rem; color: var(--grey-dark); margin-bottom: 5px;">Average Resale Price</div>
-                                <div style="font-size: 2.2rem; font-weight: bold; color: var(--primary-color);" id="stubhub-avg-price">$0</div>
+                            <div style="margin-bottom: 25px;" class="facebook-metric">
+                                <div style="font-size: 0.9rem; color: var(--grey-dark); margin-bottom: 5px;">Average Facebook Price</div>
+                                <div style="font-size: 2.2rem; font-weight: bold; color: var(--primary-color);" id="facebook-avg-price">$0</div>
                             </div>
                             
-                            <div style="margin-bottom: 15px;" class="stubhub-metric">
-                                <div style="font-size: 0.9rem; color: var(--grey-dark); margin-bottom: 5px;">Price vs Direct</div>
-                                <div style="font-size: 2.2rem; font-weight: bold;" id="stubhub-price-diff">N/A</div>
+                            <div style="margin-bottom: 15px;" class="facebook-metric">
+                                <div style="font-size: 0.9rem; color: var(--grey-dark); margin-bottom: 5px;">Facebook vs Direct</div>
+                                <div style="font-size: 2.2rem; font-weight: bold;" id="facebook-price-diff">N/A</div>
                             </div>
                         </div>
                         
                         <div style="font-size: 0.8rem; font-style: italic; color: var(--grey-dark); text-align: center; padding-top: 8px; border-top: 1px solid var(--grey-light);">
-                            Includes StubHub & other resale platforms
+                            From Facebook Marketplace and Groups
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Recent StubHub Sales -->
+            <!-- Recent Facebook Sales -->
             <div class="dashboard-card">
                 <div class="dashboard-card-header">
                     <div class="dashboard-card-title">
-                        <i class="fas fa-ticket-alt"></i> Recent StubHub Sales
+                        <i class="fab fa-facebook"></i> Recent Facebook Sales
                     </div>
                 </div>
                 <div class="dashboard-card-content" style="overflow-y: auto;">
-                    <table id="recent-stubhub-sales" style="width: 100%; border-collapse: collapse;">
+                    <table id="recent-facebook-sales" style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="border-bottom: 1px solid #e9ecef; text-align: left;">
                                 <th style="padding: 10px;">Date</th>
@@ -1019,39 +1019,39 @@
                                 <th style="padding: 10px;">Profit</th>
                             </tr>
                         </thead>
-                        <tbody id="stubhub-sales-body">
+                        <tbody id="facebook-sales-body">
                             <!-- Will be populated by JavaScript -->
                             <tr>
                                 <td colspan="4" style="text-align: center; padding: 20px;">
-                                    <div class="loading-spinner active" id="stubhub-sales-loader">
+                                    <div class="loading-spinner active" id="facebook-sales-loader">
                                         <div class="spinner"></div>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-                    <div class="no-data-message" id="stubhub-sales-no-data" style="display: none;">
+                    <div class="no-data-message" id="facebook-sales-no-data" style="display: none;">
                         <i class="fas fa-ticket-alt"></i>
-                        <p>No StubHub sales available for the selected filters</p>
+                        <p>No Facebook sales available for the selected filters</p>
                     </div>
                 </div>
             </div>
 
-            <!-- StubHub Sales by Day -->
+            <!-- Facebook Sales by Day -->
             <div class="dashboard-card">
                 <div class="dashboard-card-header">
                     <div class="dashboard-card-title">
-                        <i class="fas fa-calendar-week"></i> StubHub Sales by Day
+                        <i class="fas fa-calendar-week"></i> Facebook Sales by Day
                     </div>
                 </div>
                 <div class="dashboard-card-content">
-                    <canvas id="stubhub-days-chart" class="stubhub-days-chart"></canvas>
-                    <div class="loading-spinner" id="stubhub-days-loader">
+                    <canvas id="facebook-days-chart" class="facebook-days-chart"></canvas>
+                    <div class="loading-spinner" id="facebook-days-loader">
                         <div class="spinner"></div>
                     </div>
-                    <div class="no-data-message" id="stubhub-days-no-data" style="display: none;">
+                    <div class="no-data-message" id="facebook-days-no-data" style="display: none;">
                         <i class="fas fa-calendar-week"></i>
-                        <p>No StubHub sales data available for the selected filters</p>
+                        <p>No Facebook sales data available for the selected filters</p>
                     </div>
                 </div>
             </div>
