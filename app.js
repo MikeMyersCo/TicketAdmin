@@ -63,9 +63,28 @@ function updateDashboard(skipCharts = false) {
     filteredData = filteredData.filter(ticket => ticket.isSold);
     
     if (yearFilter) {
-        filteredData = filteredData.filter(ticket => 
-            ticket.concertDate && ticket.concertDate.getFullYear() === parseInt(yearFilter)
-        );
+        console.log(`Filtering by year: ${yearFilter}`);
+        const beforeYearFilter = filteredData.length;
+        filteredData = filteredData.filter(ticket => {
+            const hasDate = !!ticket.concertDate;
+            const yearMatch = hasDate && ticket.concertDate.getFullYear() === parseInt(yearFilter);
+            
+            // Debug for In This Moment
+            if (ticket.concert && ticket.concert.toLowerCase().includes('moment')) {
+                console.log(`In This Moment year filter debug:`, {
+                    concert: ticket.concert,
+                    rawDate: ticket.date,
+                    concertDate: ticket.concertDate,
+                    hasDate: hasDate,
+                    year: hasDate ? ticket.concertDate.getFullYear() : 'no date',
+                    yearFilter: yearFilter,
+                    yearMatch: yearMatch
+                });
+            }
+            
+            return hasDate && yearMatch;
+        });
+        console.log(`Year filter: ${beforeYearFilter} -> ${filteredData.length} tickets`);
     }
     
     if (concertFilter) {
@@ -2986,12 +3005,14 @@ async function fetchSheetData() {
         
         try {
             console.log('Fetching data from spreadsheet:', spreadsheetId);
+            console.log('Using range: 2025!A2:L');
             const response = await gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: spreadsheetId,
                 range: '2025!A2:L', // Range matches the columns in your original app
             });
             
             console.log('API response received');
+            console.log('Raw response:', response.result);
             
             const rows = response.result.values;
             if (!rows || rows.length === 0) {
@@ -3000,15 +3021,42 @@ async function fetchSheetData() {
                 return;
             }
             
+            console.log(`Found ${rows.length} rows in spreadsheet`);
+            console.log('First 5 rows:', rows.slice(0, 5));
+            
+            // Search for "In This Moment" in raw data
+            console.log('=== RAW DATA SEARCH ===');
+            console.log('Searching for "In This Moment" in raw data...');
+            let foundAnyMoment = false;
+            rows.forEach((row, index) => {
+                const concertCell = row[0] || '';
+                const concertStr = concertCell.toString().toLowerCase();
+                if (concertStr.includes('moment') || concertStr.includes('this') || concertStr.includes('in this')) {
+                    console.log(`Row ${index + 2}: Found potential match:`, row);
+                    foundAnyMoment = true;
+                }
+            });
+            
+            if (!foundAnyMoment) {
+                console.log('❌ NO "In This Moment" found in raw data');
+                console.log('Let me show you all concerts in the first 20 rows:');
+                rows.slice(0, 20).forEach((row, index) => {
+                    console.log(`Row ${index + 2}: "${row[0] || ''}" | Date: "${row[1] || ''}" | Seat: "${row[2] || ''}"`);
+                });
+            } else {
+                console.log('✅ Found "In This Moment" variations in raw data');
+            }
+            
             // Map the spreadsheet columns to our data structure
             // Column indices based on your spreadsheet:
             // 0=Concert, 1=Date, 2=Seat, 3=List Price, 4=Sale Type, 5=Sale Price, 
             // 6=Date Sold, 7=Date Paid, 8=Buyer, 9=Cost, 10=% Profit, 11=Profit
             
             const tickets = rows.map(row => {
-                if (row.length < 6) return null; // Skip rows with insufficient data
+                // Only require concert name and date (first 2 columns) to include a row
+                if (row.length < 2) return null; // Skip rows with insufficient data
                 
-                const concert = row[0] || '';
+                const concert = (row[0] || '').toString().trim();
                 const date = row[1] || '';
                 const seat = row[2] || '';
                 const listPrice = row[3] || '';
@@ -3018,6 +3066,17 @@ async function fetchSheetData() {
                 const cost = row[9] || '';
                 const profitPercentage = row[10] || '';
                 const profit = row[11] || '';
+                
+                // Debug logging for potential "In This Moment" entries
+                if (concert.toLowerCase().includes('in this moment') || concert.toLowerCase().includes('moment')) {
+                    console.log('✅ Found In This Moment entry:', {
+                        concert,
+                        date,
+                        seat,
+                        rowLength: row.length,
+                        salePrice: salePrice || 'empty'
+                    });
+                }
                 
                 // Skip empty rows
                 if (!concert && !date && !seat) return null;
@@ -3056,14 +3115,37 @@ async function fetchSheetData() {
                 // Parse concert date
                 let concertDate = null;
                 if (date) {
-                    const parts = date.split('/');
-                    if (parts.length === 3) {
-                        // Parse as month/day/year
-                        concertDate = new Date(
-                            parseInt(parts[2]), // Year
-                            parseInt(parts[0]) - 1, // Month (0-based)
-                            parseInt(parts[1]) // Day
-                        );
+                    try {
+                        const parts = date.split('/');
+                        if (parts.length === 3) {
+                            // Parse as month/day/year
+                            concertDate = new Date(
+                                parseInt(parts[2]), // Year
+                                parseInt(parts[0]) - 1, // Month (0-based)
+                                parseInt(parts[1]) // Day
+                            );
+                            
+                            // Validate the concert date
+                            if (isNaN(concertDate.getTime())) {
+                                console.warn(`Invalid concert date format for ${concert}: ${date}`);
+                                concertDate = null;
+                            }
+                        } else {
+                            // Try alternative parsing
+                            concertDate = new Date(date);
+                            if (isNaN(concertDate.getTime())) {
+                                console.warn(`Could not parse concert date for ${concert}: ${date}`);
+                                concertDate = null;
+                            }
+                        }
+                        
+                        // Special logging for In This Moment
+                        if (concert.toLowerCase().includes('moment') || concert.toLowerCase().includes('this')) {
+                            console.log(`In This Moment date parsing: "${date}" -> ${concertDate}`);
+                        }
+                    } catch (error) {
+                        console.warn(`Error parsing concert date for ${concert}: ${date}`, error);
+                        concertDate = null;
                     }
                 }
                 
@@ -3094,6 +3176,17 @@ async function fetchSheetData() {
             }).filter(ticket => ticket !== null);
             
             console.log('Processed', tickets.length, 'tickets');
+            console.log('Sample processed tickets:', tickets.slice(0, 3));
+            
+            // Log all unique concert names found
+            const allConcerts = [...new Set(tickets.map(t => t.concert))];
+            console.log('All unique concerts found:', allConcerts);
+            console.log('Looking for "In This Moment" variations...');
+            allConcerts.forEach(concert => {
+                if (concert && (concert.toLowerCase().includes('moment') || concert.toLowerCase().includes('this'))) {
+                    console.log('Potential match found:', `"${concert}"`);
+                }
+            });
             
             if (tickets.length === 0) {
                 console.warn('No valid tickets found');
@@ -3250,12 +3343,15 @@ function populateFilters() {
     const concerts = [...new Set(ticketData.map(ticket => ticket.concert))].sort();
     const concertFilter = document.getElementById('concert-filter');
     
+    console.log('All concerts found for filter:', concerts);
+    
     if (concertFilter) {
         const currentValue = concertFilter.value;
         concertFilter.innerHTML = '<option value="">All Concerts</option>';
         
         concerts.forEach(concert => {
-            if (!concert) return;
+            // Filter out empty, null, undefined, or whitespace-only concert names
+            if (!concert || typeof concert !== 'string' || concert.trim() === '') return;
             const option = document.createElement('option');
             option.value = concert;
             option.textContent = concert;
